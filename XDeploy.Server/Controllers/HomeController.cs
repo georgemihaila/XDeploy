@@ -57,6 +57,27 @@ namespace XDeploy.Server.Controllers
         }
 
         [Authorize]
+        [HttpPost]
+        public IActionResult Delete(string id = "")
+        {
+            if (_context.Applications.Exists(id))
+            {
+                var foundApp = _context.Applications.FirstByID(id);
+                if (foundApp.HasOwner(User))
+                {
+                    _context.Applications.Remove(foundApp);
+                    _context.SaveChanges();
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    return Unauthorized("Nice try.");
+                }
+            }
+            return BadRequest("Application not found.");
+        }
+
+        [Authorize]
         [Route("/app")]
         public IActionResult EditApp(string id = "")
         {
@@ -70,7 +91,7 @@ namespace XDeploy.Server.Controllers
                 }
                 else
                 {
-                    return Unauthorized("You are not the owner of this app.");
+                    return Unauthorized("Nice try.");
                 }
             }
             else if (!string.IsNullOrEmpty(id))

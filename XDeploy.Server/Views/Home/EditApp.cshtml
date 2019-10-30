@@ -41,8 +41,15 @@
             <small id="encHelp" class="form-text text-muted">Don't trust 3rd parties? Encrypt the application using <a href="https://crypto.stackexchange.com/questions/2251/how-secure-is-aes-256">AES-256</a> before deployment and decrypt it once deployed. Key management is your duty.</small>
         </div>
     </div>
-    <button type="submit" class="btn btn-primary">@((Model is null)?"Create":"Save changes")</button>
+    <button type="submit" class="btn btn-primary">@((Model is null) ? "Create" : "Save changes")</button>
 </form>
+@if (Model.ID != null)
+{
+    <br/>
+    <form asp-controller="Home" asp-action="Delete" asp-route-id="@Model.ID" method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+}
 
 <script>
     $(document).ready(function () {
