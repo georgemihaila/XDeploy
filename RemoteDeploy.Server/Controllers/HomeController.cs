@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using RemoteDeploy.Server.Models;
+using XDeploy.Server.Models;
 
-namespace RemoteDeploy.Server.Controllers
+namespace XDeploy.Server.Controllers
 {
     public class HomeController : Controller
     {

@@ -1,6 +1,6 @@
 using System;
 
-namespace RemoteDeploy.Server.Models
+namespace XDeploy.Server.Models
 {
     public class ErrorViewModel
     {
