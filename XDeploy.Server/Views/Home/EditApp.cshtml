@@ -1,0 +1,66 @@
+﻿@model EditAppViewModel
+
+@{
+    ViewData["Title"] = (Model is null) ? "- New app" : "- Configure " + Model.Name;
+}
+
+<form asp-route="EditApp" method="post">
+    @if (Model.ID != null)
+    {
+        <div class="form-group">
+            <input asp-for="ID" class="form-control flex-wrap" type="text" readonly>
+            <small id="nameHelp" class="form-text text-muted">The ID of the app.</small>
+        </div>
+    }
+    <div class="form-group">
+        <input asp-for="Name" type="text" class="form-control" id="name" placeholder="Name">
+        <span asp-validation-for="Name" class="text-danger"></span>
+        <small id="nameHelp" class="form-text text-muted">The name of your app.</small>
+    </div>
+    <div class="form-group">
+        <input asp-for="Description" type="text" class="form-control" id="desc" placeholder="Description">
+        <span asp-validation-for="Description" class="text-danger"></span>
+        <small id="descHelp" class="form-text text-muted">A short description.</small>
+    </div>
+    <div class="form-group">
+        <div id="ipresarea" class="custom-control custom-checkbox">
+            <input asp-for="IPRestrictedDeployer" type="checkbox" class="custom-control-input" id="iprestricted">
+            <span asp-validation-for="IPRestrictedDeployer" class="text-danger"></span>
+            <label class="custom-control-label" for="iprestricted" onselectstart="return false">IP-restricted deployer</label>
+            <small id="ipHelp" class="form-text text-muted">Allow the app to be deployed only from a single location.</small>
+            <input asp-for="DeployerIP" type="text" class="form-control" id="DeployerIP" placeholder="0.0.0.0">
+            <span asp-validation-for="DeployerIP" id="ipwarn" class="text-danger"></span>
+            <small @Html.Raw(Model.IPRestrictedDeployer ? "" : " hidden") id="ipHelp2" class="form-text text-muted">The IP address of the deployer.</small>
+        </div>
+    </div>
+    <div class="form-group">
+        <div id="encarea" class="custom-control custom-checkbox">
+            <input asp-for="Encrypted" type="checkbox" class="custom-control-input" id="encrypted">
+            <span asp-validation-for="Encrypted" class="text-danger"></span>
+            <label class="custom-control-label" for="encrypted" onselectstart="return false">Encrypt application</label>
+            <small id="encHelp" class="form-text text-muted">Don't trust 3rd parties? Encrypt the application using <a href="https://crypto.stackexchange.com/questions/2251/how-secure-is-aes-256">AES-256</a> before deployment and decrypt it once deployed. Key management is your duty.</small>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">@((Model is null)?"Create":"Save changes")</button>
+</form>
+
+<script>
+    $(document).ready(function () {
+        $("#iprestricted").change(ipres);
+        ipres();
+    });
+    function ipres() {
+        $("#DeployerIP").removeAttr('hidden');
+        $("#ipHelp2").removeAttr('hidden');
+        if ($("#iprestricted").is(':checked')) {
+            $("#DeployerIP").show();
+            $("#ipHelp2").show();
+            $("#ipwarn").show();
+        }
+        else {
+            $("#DeployerIP").hide();
+            $("#ipHelp2").hide();
+            $("#ipwarn").hide();
+        }
+    }
+</script>

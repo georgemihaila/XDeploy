@@ -1,0 +1,71 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+@model IndexViewModel
+
+@if (User.Identity.IsAuthenticated)
+{
+    if (!Model.HasAPIKey)
+    {
+        <script>
+            function generateAPIKey() {
+                $("#gen-key").text("Generating key...");
+                $.post("/api/new-key", function (data) {
+                    $("#api-area").html('<p>This is your API key. Store it somewhere safe.</p><p class="text-light bg-dark">' + data + '</p>');
+                }).fail(function (error) {
+                    $("#api-area").html('<p>An error occurred.</br>Details:</p><p class="text-light bg-dark">' + error + '</p>');
+                });
+                this.generateAPIKey = null;
+            }
+        </script>
+        <div id="api-area">
+            <p>Before starting, you need an API key.</p>
+            <button id="gen-key" onclick="generateAPIKey()" type="button" class="btn btn-primary">Click here to generate an API key</button>
+        </div>
+    }
+    else
+    {
+        if (Model.Applications.Count() == 0)
+        {
+            <p>You don't have any registered applications.</p>
+        }
+        else
+        {
+            <p>Your apps:</p>
+            foreach (var app in Model.Applications)
+            {
+                <div class="card d-inline-block" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">@app.Name</h5>
+                        <p class="card-text">@app.Description</p>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">ID: @app.ID</li>
+                        <li class="list-group-item">IP restricted: @app.IPRestrictedDeployer</li>
+                        @if (app.IPRestrictedDeployer)
+                        {
+                            <li class="list-group-item">IP: @app.DeployerIP</li>
+                        }
+                        <li class="list-group-item">Encrypted: @app.Encrypted</li>
+                        <li class="list-group-item">Last updated: @((app.LastUpdate == DateTime.MinValue)?"Never":app.LastUpdate.ToShortTimeString())</li>
+                    </ul>
+                    <div class="card-body">
+                        <a asp-action="EditApp" asp-route-id="@app.ID" class="card-link">Configure</a>
+                        <a href="#" class="card-link">Delete</a>
+                    </div>
+                </div>
+            }
+        }
+        <br/>
+        <a asp-controller="Home" asp-action="EditApp" id="reg-app" class="btn btn-primary">Register a new application</a>
+    }
+}
+else
+{
+
+    <div class="text-center">
+        <h1 class="display-4">Welcome</h1>
+    </div>
+}
+
