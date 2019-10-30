@@ -64,6 +64,8 @@ namespace XDeploy.Server
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseMiddleware<DataSecurityMiddleware>();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(

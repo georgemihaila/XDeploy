@@ -74,7 +74,10 @@ namespace XDeploy.Server.Controllers
                     return Unauthorized("Nice try.");
                 }
             }
-            return BadRequest("Application not found.");
+            else
+            {
+                return NotFound("Application not found.");
+            }
         }
 
         [Authorize]
@@ -96,7 +99,7 @@ namespace XDeploy.Server.Controllers
             }
             else if (!string.IsNullOrEmpty(id))
             {
-                return BadRequest("Application not found.");
+                return NotFound("Application not found.");
             }
             return View(app);
         }
@@ -167,7 +170,7 @@ namespace XDeploy.Server.Controllers
                 }
                 return View("EditApp", appModel);
             }
-            
+
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
