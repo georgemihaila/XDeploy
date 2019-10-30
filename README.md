@@ -1,4 +1,4 @@
-# RemoteDeploy
+# XDeploy
 Deploying applications on remote computers
 
 This application has 3 main components:
