@@ -37,7 +37,7 @@ namespace XDeploy.Server.Controllers
                 {
                     UserEmail = User.Identity.Name,
                     HasAPIKey = _context.HasAPIKeys(User),
-                    Applications = _context.Applications.Where(x => x.OwnerEmail == User.Identity.Name)
+                    Applications = _context.Applications.Where(x => x.OwnerEmail == User.Identity.Name).OrderBy(x => x.ID)
                 };
             }
             return View(model);
@@ -56,53 +56,90 @@ namespace XDeploy.Server.Controllers
             return Content(JsonConvert.SerializeObject(key.Key), "application/json");
         }
 
+        [HttpGet]
+        [Route("/test")]
         [Authorize]
-        [HttpPost]
-        public IActionResult Delete(string id = "")
+        public IActionResult ModelBindingTest([ModelBinder(Name = "id")] Application application)
         {
-            if (_context.Applications.Exists(id))
+            if (application != null && application.HasOwner(User))
             {
-                var foundApp = _context.Applications.FirstByID(id);
-                if (foundApp.HasOwner(User))
-                {
-                    _context.Applications.Remove(foundApp);
-                    _context.SaveChanges();
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    return Unauthorized("Nice try.");
-                }
+                return Content(JsonConvert.SerializeObject(application, Formatting.Indented));
             }
             else
             {
-                return NotFound("Application not found.");
+                return NotFound();
+            }
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult Delete([ModelBinder(Name = "id")] Application application)
+        {
+            if (application != null && application.HasOwner(User))
+            {
+                _context.Applications.Remove(application);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return NotFound();
             }
         }
 
         [Authorize]
         [Route("/app")]
-        public IActionResult EditApp(string id = "")
+        public IActionResult EditApp([ModelBinder(Name = "id")] Application application)
         {
-            EditAppViewModel app = new EditAppViewModel();
-            if (_context.Applications.Exists(id))
+            if (application is null)
             {
-                var foundApp = _context.Applications.FirstByID(id);
-                if (foundApp.HasOwner(User))
-                {
-                    app = (EditAppViewModel)foundApp;
-                }
-                else
-                {
-                    return Unauthorized("Nice try.");
-                }
+                return View((EditAppViewModel)null);
             }
-            else if (!string.IsNullOrEmpty(id))
+            if (application.HasOwner(User))
             {
-                return NotFound("Application not found.");
+                return View((EditAppViewModel)application);
             }
-            return View(app);
+            return NotFound();
         }
+
+        [Authorize]
+        [Route("/create-app", Name = "CreateApp")]
+        [HttpPost]
+        public IActionResult Create([FromForm] EditAppViewModel appModel)
+        {
+            var stupidRegexCheck = true; // [RegularExpressionAttribute] marks null or empty strings as valid
+            if (appModel.IPRestrictedDeployer)
+            {
+                stupidRegexCheck = !string.IsNullOrEmpty(appModel.DeployerIP);
+            }
+            if (ModelState.IsValid && stupidRegexCheck)
+            {
+                var newApp = new Application()
+                {
+                    ID = RNG.GetRandomString(10),
+                    OwnerEmail = User.Identity.Name,
+                    DeployerIP = appModel.DeployerIP,
+                    Description = appModel.Description,
+                    Encrypted = appModel.Encrypted,
+                    EncryptionAlgorithm = EncryptionAlgorithm.AES256,
+                    IPRestrictedDeployer = appModel.IPRestrictedDeployer,
+                    LastUpdate = DateTime.MinValue,
+                    Name = appModel.Name
+                };
+                _context.Applications.Add(newApp);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                if (!stupidRegexCheck)
+                {
+                    ModelState.AddModelError(nameof(appModel.DeployerIP), "Invalid IP address");
+                }
+                return View("EditApp", appModel);
+            }
+        }
+
 
         [Authorize]
         [Route("/edit-app", Name = "EditApp")]
@@ -118,7 +155,7 @@ namespace XDeploy.Server.Controllers
             {
                 if (appModel.ID != null && _context.Applications.Exists(appModel.ID))
                 {
-                    var foundApp = _context.Applications.FirstByID(appModel.ID);
+                    var foundApp = _context.Applications.Find(appModel.ID);
                     if (foundApp.HasOwner(User))
                     {
                         var newApp = new Application()
@@ -145,21 +182,7 @@ namespace XDeploy.Server.Controllers
                 }
                 else
                 {
-                    var newApp = new Application()
-                    {
-                        ID = RNG.GetRandomString(10),
-                        OwnerEmail = User.Identity.Name,
-                        DeployerIP = appModel.DeployerIP,
-                        Description = appModel.Description,
-                        Encrypted = appModel.Encrypted,
-                        EncryptionAlgorithm = EncryptionAlgorithm.AES256,
-                        IPRestrictedDeployer = appModel.IPRestrictedDeployer,
-                        LastUpdate = DateTime.MinValue,
-                        Name = appModel.Name
-                    };
-                    _context.Applications.Add(newApp);
-                    _context.SaveChanges();
-                    return RedirectToAction("Index");
+                    return NotFound();
                 }
             }
             else

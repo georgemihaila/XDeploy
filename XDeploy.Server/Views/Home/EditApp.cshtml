@@ -1,11 +1,11 @@
 ﻿@model EditAppViewModel
 
 @{
-    ViewData["Title"] = (Model is null) ? "- New app" : "- Configure " + Model.Name;
+    ViewData["Title"] = (Model is null) ? "- New app" : "- Configure " + Model?.Name;
 }
 
-<form asp-route="EditApp" method="post">
-    @if (Model.ID != null)
+<form asp-route="@((Model is null) ? "CreateApp" : "EditApp")" method="post">
+    @if (Model?.ID != null)
     {
         <div class="form-group">
             <input asp-for="ID" class="form-control flex-wrap" type="text" readonly>
@@ -30,7 +30,7 @@
             <small id="ipHelp" class="form-text text-muted">Allow the app to be deployed only from a single location.</small>
             <input asp-for="DeployerIP" type="text" class="form-control" id="DeployerIP" placeholder="0.0.0.0">
             <span asp-validation-for="DeployerIP" id="ipwarn" class="text-danger"></span>
-            <small @Html.Raw(Model.IPRestrictedDeployer ? "" : " hidden") id="ipHelp2" class="form-text text-muted">The IP address of the deployer.</small>
+            <small @Html.Raw(((Model is null)?false:Model.IPRestrictedDeployer) ? "" : " hidden") id="ipHelp2" class="form-text text-muted">The IP address of the deployer.</small>
         </div>
     </div>
     <div class="form-group">
@@ -43,10 +43,10 @@
     </div>
     <button type="submit" class="btn btn-primary">@((Model is null) ? "Create" : "Save changes")</button>
 </form>
-@if (Model.ID != null)
+@if (Model?.ID != null)
 {
     <br/>
-    <form asp-controller="Home" asp-action="Delete" asp-route-id="@Model.ID" method="post">
+    <form asp-controller="Home" asp-action="Delete" asp-route-id="@Model?.ID" method="post">
         <button type="submit" class="btn btn-danger">Delete</button>
     </form>
 }

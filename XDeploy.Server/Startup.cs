@@ -39,6 +39,11 @@ namespace XDeploy.Server
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString))
                 .AddEntityFrameworkSqlServer();
 
+            services.AddMvc(options =>
+            {
+                options.ModelBinderProviders.Insert(0, new IDApplicationBinderProvider());
+            });
+
             services.AddControllersWithViews();
             services.AddRazorPages();
         }
@@ -63,8 +68,6 @@ namespace XDeploy.Server
 
             app.UseAuthentication();
             app.UseAuthorization();
-
-            app.UseMiddleware<DataSecurityMiddleware>();
 
             app.UseEndpoints(endpoints =>
             {

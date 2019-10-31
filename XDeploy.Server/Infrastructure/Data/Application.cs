@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,6 +11,7 @@ namespace XDeploy.Server.Infrastructure.Data
     /// <summary>
     /// Represents a registered application.
     /// </summary>
+    [ModelBinder(BinderType = typeof(IDApplicationBinder))]
     public class Application : IApplication
     {
         /// <summary>
