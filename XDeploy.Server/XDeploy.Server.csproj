@@ -5,6 +5,11 @@
     <UserSecretsId>aspnet-XDeploy.Server-9FAB833C-9F65-4A46-8C4F-7983328E52B2</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Migrations\20191031122313_AddedKeyHash.cs" />
+    <Compile Remove="Migrations\20191031122313_AddedKeyHash.Designer.cs" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="3.0.0" />
@@ -19,6 +24,11 @@
 
   <ItemGroup>
     <Folder Include="Infrastructure\Security\" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\XDeploy.Core\XDeploy.Core.csproj" />
   </ItemGroup>
 
 </Project>

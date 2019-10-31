@@ -50,7 +50,8 @@ namespace XDeploy.Server.Controllers
         {
             if (_context.HasAPIKeys(User))
                 return BadRequest("An API key is already defined for this user.");
-            var key = new APIKey(RNG.GetRandomString(32), User.Identity.Name);
+            string k = RNG.GetRandomString(32);
+            var key = new APIKey(k, User.Identity.Name, Cryptography.ComputeSHA256(k));
             _context.APIKeys.Add(key);
             _context.SaveChanges();
             return Content(JsonConvert.SerializeObject(key.Key), "application/json");

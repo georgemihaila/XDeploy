@@ -2,7 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29319.158
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDeploy.Server", "XDeploy.Server\XDeploy.Server.csproj", "{767F937F-12B5-4F9E-B197-C8CB364D26FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XDeploy.Server", "XDeploy.Server\XDeploy.Server.csproj", "{767F937F-12B5-4F9E-B197-C8CB364D26FB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDeploy.Core", "XDeploy.Core\XDeploy.Core.csproj", "{00A2179C-C123-4549-A808-38E9B4830CDA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,6 +16,10 @@ Global
 		{767F937F-12B5-4F9E-B197-C8CB364D26FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{767F937F-12B5-4F9E-B197-C8CB364D26FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{767F937F-12B5-4F9E-B197-C8CB364D26FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00A2179C-C123-4549-A808-38E9B4830CDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00A2179C-C123-4549-A808-38E9B4830CDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00A2179C-C123-4549-A808-38E9B4830CDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00A2179C-C123-4549-A808-38E9B4830CDA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
