@@ -2,7 +2,9 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using XDeploy.Server.Infrastructure;
@@ -48,6 +50,24 @@ namespace XDeploy.Server.Controllers
             }
         }
 
+        [HttpPost]
+        public IActionResult ValidateCredentials([FromHeader(Name = "Authorization")] string authString)
+        {
+            var creds = Decode(authString);
+            if (creds == null)
+            {
+                return BadRequest();
+            }
+            if (ValidateCredentials(creds.Value))
+            {
+                return Ok();
+            }
+            else
+            {
+                return Unauthorized();
+            }
+        }
+
         [HttpGet]
         public IActionResult ListApps([FromHeader(Name = "Authorization")] string authString)
         {
@@ -63,6 +83,70 @@ namespace XDeploy.Server.Controllers
             else
             {
                 return Unauthorized();
+            }
+        }
+
+        [HttpGet]
+        public IActionResult App([FromHeader(Name = "Authorization")] string authString, string id)
+        {
+            var creds = Decode(authString);
+            if (creds == null)
+            {
+                return BadRequest();
+            }
+            if (ValidateCredentials(creds.Value))
+            {
+                return Content(JsonConvert.SerializeObject(_context.Applications.First(x => x.OwnerEmail == creds.Value.Email && x.ID == id), Formatting.Indented));
+            }
+            else
+            {
+                return Unauthorized();
+            }
+        }
+
+        [HttpGet]
+        public IActionResult CachedFilesForApp([FromHeader(Name = "Authorization")] string authString, string id)
+        {
+            var creds = Decode(authString);
+            if (creds == null)
+            {
+                return BadRequest();
+            }
+            if (ValidateCredentials(creds.Value))
+            {
+                var dict = new List<(string, string)>();
+                if (Directory.Exists(id))
+                {
+                    string[] allFiles = Directory.GetFiles(id, "*.*", SearchOption.AllDirectories);
+                    foreach (var file in allFiles)
+                    {
+                        var pair = (file, SHA256CheckSum(file));
+                        dict.Add(pair);
+                    }
+                }
+                return Content(JsonConvert.SerializeObject(dict));
+            }
+            else
+            {
+                return Unauthorized();
+            }
+        }
+
+        private static string SHA256CheckSum(string filePath)
+        {
+            using (SHA256 SHA256 = SHA256Managed.Create())
+            {
+                byte[] bytes = null;
+                using (FileStream fileStream = System.IO.File.OpenRead(filePath))
+                {
+                    bytes = SHA256.ComputeHash(fileStream);
+                }
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
             }
         }
     }
