@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XDeploy.Server.Infrastructure.Data;
+using System.IO;
 
 namespace XDeploy.Server
 {
@@ -46,6 +47,12 @@ namespace XDeploy.Server
 
             services.AddControllersWithViews();
             services.AddRazorPages();
+
+            var cachePath = Configuration.GetValue<string>("CacheLocation");
+            if (!Directory.Exists(cachePath))
+            {
+                Directory.CreateDirectory(cachePath);
+            }
         }
 
 

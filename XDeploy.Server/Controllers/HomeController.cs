@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using XDeploy.Core;
 using XDeploy.Server.Infrastructure;
 using XDeploy.Server.Infrastructure.Data;
 using XDeploy.Server.Infrastructure.Data.Extensions;

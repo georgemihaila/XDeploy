@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net;
 using System.IO;
 using Newtonsoft.Json;
+using XDeploy.Core.IO;
 
 namespace XDeploy.Core
 {
@@ -19,19 +20,18 @@ namespace XDeploy.Core
 
         public XDeployAPI(string endpoint, string email, string apiKey)
         {
-            _authHeaderValue = "Basic " + Base64Encode(string.Join(':', email, apiKey));
+            _authHeaderValue = "Basic " + Cryptography.Base64Encode(string.Join(':', email, apiKey));
             _endpoint = endpoint + "/api";
         }
 
-        private static string Base64Encode(string plainText)
-        {
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            return System.Convert.ToBase64String(plainTextBytes);
-        }
 
         public async Task<bool> ValidateCredentialsAsync() => await POSTRequestAsync("/ValidateCredentials");
 
-        public async Task<List<(string Filename, string Hash)>> GetRemoteFilesForAppAsync(string id) => JsonConvert.DeserializeObject<List<(string, string)>>(await GETRequestAsync("/CachedFilesForApp?id=" + id));
+        public async Task<Tree> GetRemoteTree(string id)
+        {
+            var res = await GETRequestAsync("/TreeForApp?id=" + id);
+            return JsonConvert.DeserializeObject<Tree>(res);
+        }
 
         public async Task<string> GetAppDetailsAsync(string id) => await GETRequestAsync("/App?id=" + id);
 
