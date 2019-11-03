@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XDeploy.Server.Infrastructure.Data;
 using System.IO;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace XDeploy.Server
 {

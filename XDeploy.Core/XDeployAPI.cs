@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Net;
 using System.IO;
 using Newtonsoft.Json;
-using XDeploy.Core.IO;
 
 namespace XDeploy.Core
 {
@@ -27,13 +26,65 @@ namespace XDeploy.Core
 
         public async Task<bool> ValidateCredentialsAsync() => await POSTRequestAsync("/ValidateCredentials");
 
-        public async Task<Tree> GetRemoteTree(string id)
-        {
-            var res = await GETRequestAsync("/TreeForApp?id=" + id);
-            return JsonConvert.DeserializeObject<Tree>(res);
-        }
-
         public async Task<string> GetAppDetailsAsync(string id) => await GETRequestAsync("/App?id=" + id);
+
+        public async Task<string> UploadFileIfNotExistsAsync(string id, string baseDirectory, string fullFilePath)
+        {
+            var contentLocation = fullFilePath.Replace(baseDirectory, string.Empty).TrimStart('\\');
+            var checksum = Cryptography.SHA256CheckSum(fullFilePath);
+
+            //Check if file already exists
+            var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/HasFile?id=" + id);
+            request.Method = "GET";
+            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
+            request.Headers["X-SHA256"] = checksum;
+            var response = (HttpWebResponse)await request.GetResponseAsync();
+            bool exists = false;
+            using (var reader = new StreamReader(response.GetResponseStream()))
+            {
+                exists = JsonConvert.DeserializeObject<bool>(reader.ReadToEnd());
+            }
+            if (!exists)
+            {
+                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + id);
+                request2.Method = "POST";
+                request2.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+                request2.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
+                request2.Headers["X-SHA256"] = checksum;
+                //request2.Headers[Httprequest2Header.ContentLength] = bytes.Length.ToString();
+                using (var stream = await request2.GetRequestStreamAsync())
+                {
+                    var bytes = File.ReadAllBytes(fullFilePath);
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Close();
+                }
+
+                using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+            else
+            {
+                return "Exists";
+            }
+        }
+        /*
+         *    try
+            {
+                _ = await request.GetResponseAsync();
+            }
+            catch (WebException e)
+            {
+                HttpStatusCode? status = (e.Response as HttpWebResponse)?.StatusCode;
+                if (status != null && status.Value == HttpStatusCode.SeeOther)
+                {
+                    return "Already exists";
+                }
+            }
+         */
+        private async Task<T> GETAsync<T>(string path) => JsonConvert.DeserializeObject<T>(await GETRequestAsync(path));
 
         private async Task<string> GETRequestAsync(string path)
         {
