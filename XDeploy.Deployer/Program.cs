@@ -17,57 +17,99 @@ namespace XDeploy.Deployer
         //xdd --Endpoint val --email val --key val --app val --path val
         private const string NL = "\r\n";
         private const string NLT = "\r\n\t";
+        private const string ConfigFile = "config.json";
+        private const string TimeFormat = "HH:mm:ss";
+        private static XDeployAPI _api;
         
         static async Task Main(string[] args)
-        {
-            if (args.Length != 5)
+        { 
+            if (!File.Exists(ConfigFile))
             {
-                Console.WriteLine($"Usage:{NLT}xdd.exe [endpoint] [email] [apikey] [appid] [path]");
+                Console.WriteLine($"Configuration file {ConfigFile} not found.");
                 return;
             }
-            var endpoint = args[0];
-            var email = args[1];
-            var key = args[2];
-            var appid = args[3];
-            var path = args[4].Replace('/', '\\');
-            Console.Clear();
-            var api = new XDeployAPI(endpoint, email, key);
-
-            //Console.WriteLine("Validating credentials...");
-            if (await api.ValidateCredentialsAsync())
+            StartupConfig config = null;
+            try
             {
-                //Console.WriteLine("Credentials ok.");
-                try
+                config = JsonConvert.DeserializeObject<StartupConfig>(File.ReadAllText(ConfigFile));
+            }
+            catch
+            {
+                Console.WriteLine("Malformed configuration file");
+                return;
+            }
+            _api = new XDeployAPI(config.Endpoint, config.Email, config.APIKey);
+
+            //Validate credentials
+            if (await _api.ValidateCredentialsAsync())
+            {
+                //Validate each app
+                foreach(var app in config.Apps)
                 {
-                    //Validate app
-                    _ = await api.GetAppDetailsAsync(appid);
+                    try
+                    {
+                        _ = await _api.GetAppDetailsAsync(app.ID);
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"Invalid app ID \"{app.ID}\" or unauthorized IP.");
+                        return;
+                    }
+                    if (!Directory.Exists(app.Location))
+                    {
+                        Console.WriteLine("Invalid application path: {0}", app.Location);
+                        return;
+                    }
                 }
-                catch
+                var server = new SyncSignalServer(config.SyncServerPort);
+                server.SyncSignalReceived += async (_, id) =>
                 {
-                    Console.WriteLine("Invalid app ID or unauthorized IP.");
-                    return;
-                }
-                if (!Directory.Exists(path))
+                    Func<ApplicationInfo, bool> idSelector = app => app.ID == id;
+                    if (config.Apps.Any(idSelector))
+                    {
+                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - Sync signal received for app {id}");
+                        var res = await SyncFiles(config.Apps.First(idSelector));
+                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {res.New} file{((res.New != 1)?"s":string.Empty)} uploaded.");
+                    }
+                };
+                server.Start();
+                Console.WriteLine("Server listening on http://127.0.0.1:{0}", server.Port);
+                Console.WriteLine("Trigger a sync signal by making a request to http://127.0.0.1:{0}?id=appid", server.Port);
+                Console.CancelKeyPress += (_, __) => 
                 {
-                    Console.WriteLine("Invalid path: {0}", path);
-                    return;
-                }
-                var sw = new System.Diagnostics.Stopwatch();
-                sw.Start();
-                foreach(var file in Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories))
+                    Console.WriteLine("Stopping server...");
+                    server.Stop();
+                };
+                while (true)
                 {
-                    if ((new FileInfo(file)).Length > 30 * 1024 * 1024)
-                        continue; //30MB max
-                    await api.UploadFileIfNotExistsAsync(appid, path, file);
+                    await Task.Delay(500);
                 }
-                sw.Stop();
-                Console.WriteLine("Completed in {0}ms", sw.Elapsed.TotalMilliseconds);
             }
             else
             {
                 Console.WriteLine("Invalid credentials.");
                 return;
             }
+        }
+
+        private static async Task<(int AlreadyExisting, int New)> SyncFiles(ApplicationInfo application)
+        {
+            var result = (0, 0);
+            foreach (var file in Directory.EnumerateFiles(application.Location, "*.*", SearchOption.AllDirectories))
+            {
+                if ((new FileInfo(file)).Length > 30 * 1024 * 1024)
+                    continue; //30MB max
+                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, file);
+                if (res == "Exists")
+                {
+                    result.Item1++;
+                }
+                else
+                {
+                    result.Item2++;
+                }
+            }
+            return result;
         }
     }
 }

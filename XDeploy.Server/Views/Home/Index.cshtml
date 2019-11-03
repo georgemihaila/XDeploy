@@ -48,7 +48,7 @@
                             <li class="list-group-item">IP: @app.DeployerIP</li>
                         }
                         <li class="list-group-item">Encrypted: @app.Encrypted</li>
-                        <li class="list-group-item">Last updated: @((app.LastUpdate == DateTime.MinValue)?"Never":app.LastUpdate.ToShortTimeString())</li>
+                        <li class="list-group-item">Last updated: @((app.LastUpdate == DateTime.MinValue)?"Never":app.LastUpdate.ToString())</li>
                     </ul>
                     <div class="card-body">
                         <a asp-action="EditApp" asp-route-id="@app.ID" class="card-link">Configure</a>

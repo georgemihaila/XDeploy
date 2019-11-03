@@ -163,6 +163,8 @@ namespace XDeploy.Server.Controllers
                         }
                         stream.Write(buffer, 0, buffer.Length);
                         stream.Close();
+                        app.LastUpdate = DateTime.Now;
+                        _context.SaveChanges();
                     }
                 }
                 return Created(new Uri(location, UriKind.Relative), null);
