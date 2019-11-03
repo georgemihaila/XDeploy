@@ -165,6 +165,7 @@ namespace XDeploy.Server.Controllers
                         stream.Close();
                         app.LastUpdate = DateTime.Now;
                         _context.SaveChanges();
+                        StaticWebSocketsWorkaround.TriggerUpdate(app.ID);
                     }
                 }
                 return Created(new Uri(location, UriKind.Relative), null);

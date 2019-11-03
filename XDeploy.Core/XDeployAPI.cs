@@ -7,6 +7,7 @@ using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 using XDeploy.Core.IO;
+using WebSocketSharp;
 
 namespace XDeploy.Core
 {
@@ -71,6 +72,19 @@ namespace XDeploy.Core
                 return "Exists";
             }
         }
+
+        public void SubscribeToUpdateWebSockets(string id)
+        {
+            var ws = new WebSocket(string.Format("{0}/ws?authString={1}&id={2}", _endpoint.Replace("https://", "wss://"), _authHeaderValue.Replace("Basic ", string.Empty), id));
+            ws.SslConfiguration.CheckCertificateRevocation = false;
+            ws.OnMessage += (sender, e) =>
+            {
+                ApplicationUpdate?.Invoke(this, ((dynamic)JsonConvert.DeserializeObject(e.Data)).id.ToString());
+            };
+            ws.Connect();
+        }
+
+        public event EventHandler<string> ApplicationUpdate;
 
         private async Task<T> GETAsync<T>(string path) => JsonConvert.DeserializeObject<T>(await GETRequestAsync(path));
 

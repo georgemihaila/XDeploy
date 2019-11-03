@@ -14,6 +14,7 @@ using XDeploy.Server.Infrastructure.Data;
 namespace XDeploy.Server.Controllers
 {
     [Route("/api/ws")]
+    [AllowAnonymous]
     public class WebSocketsController : APIValidationBase
     {
         public WebSocketsController(ApplicationDbContext context) : base(context)
@@ -43,15 +44,24 @@ namespace XDeploy.Server.Controllers
                 var lastUpdate = app.LastUpdate;
                 await Task.Run(async () =>
                 {
+                    var sw = new System.Diagnostics.Stopwatch();
+                    var trigger_after_ms = 5 * 1000; //If multiple requests are received, wait for 5 seconds since the last one, then send sync signal
                     while (webSocket.State == WebSocketState.Open)
-                    {
-                        await Task.Delay(1000);
-                        var clu = _context.Applications.Find(id).LastUpdate;
-                        if (clu != lastUpdate)
+                    {/*
+                        StaticWebSocketsWorkaround.RegisterOnAppUpdate(id, async(data) => 
                         {
-                            lastUpdate = clu;
-                            await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = id }));
-                        }
+                            sw.Restart();
+                            while (sw.IsRunning)
+                            {
+                                Thread.Sleep(trigger_after_ms);
+                                if (sw.Elapsed.TotalMilliseconds > trigger_after_ms && sw.IsRunning)
+                                {
+                                    sw.Stop();
+                                    await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = data }));
+                                }
+                            }
+                        });*/
+                        await Task.Delay(1000);
                     }
                     await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection terminated.", CancellationToken.None);
                 });

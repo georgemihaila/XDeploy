@@ -77,6 +77,7 @@ namespace XDeploy.Server
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseWebSockets();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(
@@ -85,7 +86,6 @@ namespace XDeploy.Server
                 endpoints.MapRazorPages();
             });
 
-            app.UseWebSockets();
         }
     }
 }

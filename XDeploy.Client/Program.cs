@@ -61,11 +61,23 @@ namespace XDeploy.Client
                         return;
                     }
                     WriteLine_Verbose($"Initial sync for app {app.ID}...");
-                    await SyncFiles(app);
+                    await SyncFilesAsync(app);
                     WriteLine_Verbose($"Initial sync for app {app.ID} completed");
+                    _api.SubscribeToUpdateWebSockets(app.ID);
                 }
                 Console.WriteLine("Listening for changes...");
-
+                _api.ApplicationUpdate += async(_, id) =>
+                {
+                    WriteLine_Verbose($"WebSocket message received; data: \"{id}\"");
+                    Func<ApplicationInfo, bool> idSelector = app => app.ID == id;
+                    if (config.Apps.Any(idSelector))
+                    {
+                        var app = config.Apps.First(idSelector);
+                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {id} - Updating app...");
+                        var changes = await SyncFilesAsync(app);
+                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {id} - Updated ({changes} change{(changes != 1 ? "s" : string.Empty)})");
+                    }
+                };
                 while (true)
                 {
                     await Task.Delay(500);
@@ -78,7 +90,7 @@ namespace XDeploy.Client
             }
         }
 
-        private static async Task SyncFiles(ApplicationInfo application)
+        private static async Task<int> SyncFilesAsync(ApplicationInfo application)
         {
             if (application is null)
                 throw new ArgumentNullException(nameof(application));
@@ -89,10 +101,10 @@ namespace XDeploy.Client
             {
                 CreateDirectoriesFromDirectoryInfo(application.Location, topDir);
             }
-            await DownloadFilesFromTree(application, remoteTree.BaseDirectory);
+            return await DownloadFilesFromTree(application, remoteTree.BaseDirectory);
         }
 
-        private static async Task DownloadFilesFromTree(ApplicationInfo application, Core.IO.DirectoryInfo baseDir)
+        private static async Task<int> DownloadFilesFromTree(ApplicationInfo application, Core.IO.DirectoryInfo baseDir)
         {
             foreach(var file in baseDir.Files)
             {
@@ -100,6 +112,8 @@ namespace XDeploy.Client
                 var dstFilePath = Path.Join(application.Location, file.Name);
                 if (File.Exists(dstFilePath))
                 {
+                    if (Cryptography.ComputeSHA256(dstFilePath) == file.SHA256CheckSum)
+                        continue; //Ignore already synced files; doesn't work for encrypted files because we delete them right away (maybe we shouldn't; or we should have a separate (cached) tree for them :/)
                     File.Delete(dstFilePath);
                 }
                 await File.WriteAllBytesAsync(dstFilePath, bytes);
@@ -111,8 +125,9 @@ namespace XDeploy.Client
             }
             foreach(var subdir in baseDir.Subdirectories)
             {
-                await DownloadFilesFromTree(application, subdir);
+                return 1 + await DownloadFilesFromTree(application, subdir);
             }
+            return 0;
         }
 
         private static void CreateDirectoriesFromDirectoryInfo(string basePath, Core.IO.DirectoryInfo info)

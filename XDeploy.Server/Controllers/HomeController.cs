@@ -174,17 +174,17 @@ namespace XDeploy.Server.Controllers
                         _context.SaveChanges();
 
                         //Remove encrypted or non-encrypted files from the associated cache directory (if possible)
-                        var files = Directory.EnumerateFiles(Path.Join(_cachedFilesPath, newApp.ID), "*.*", SearchOption.AllDirectories);
+                        var files = Directory.EnumerateFiles(Path.Combine(_cachedFilesPath, newApp.ID), "*.*", SearchOption.AllDirectories);
                         if (newApp.Encrypted)
                         {
-                            foreach (var file in files.Where(x => !x.StartsWith(".enc")))
+                            foreach (var file in files.Where(x => !x.EndsWith(".enc")))
                             {
                                 System.IO.File.Delete(file);
                             }
                         }
                         else
                         {
-                            foreach (var file in files.Where(x => x.StartsWith(".enc")))
+                            foreach (var file in files.Where(x => x.EndsWith(".enc")))
                             {
                                 System.IO.File.Delete(file);
                             }
