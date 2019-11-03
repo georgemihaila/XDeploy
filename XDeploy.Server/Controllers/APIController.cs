@@ -18,53 +18,13 @@ using XDeploy.Server.Infrastructure.Data;
 
 namespace XDeploy.Server.Controllers
 {
-    public class APIController : Controller
+    public class APIController : APIValidationBase
     {
-        private readonly ApplicationDbContext _context;
         private readonly string _cachedFilesPath;
 
-        public APIController(IConfiguration configuration, ApplicationDbContext context)
+        public APIController(IConfiguration configuration, ApplicationDbContext context) : base(context)
         {
-            _context = context;
             _cachedFilesPath = configuration.GetValue<string>("CacheLocation");
-        }
-
-        private bool ValidateCredentials((string Email, string KeyHash)? creds)
-        {
-            if (creds.HasValue)
-            {
-                var keys = _context.APIKeys.Where(x => x.UserEmail == creds.Value.Email);
-                if (keys.Count() > 0)
-                {
-                    return keys.Any(x => x.KeyHash == creds.Value.KeyHash);
-                }
-            }
-            return false;
-        }
-
-        private bool ValidateIPIfNecessary(Application app)
-        {
-            if (app is null)
-                return false;
-            return app.IPRestrictedDeployer ? (HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString() == app.DeployerIP) : true;
-        }
-
-        private (string Email, string KeyHash)? Decode(string authString)
-        {
-            try
-            {
-                if (authString.Contains("Basic "))
-                    authString = authString.Replace("Basic ", string.Empty);
-                var decodedString = Cryptography.Base64Decode(authString);
-                var pair = decodedString.Split(':');
-                var user = pair[0];
-                var keyHash = Cryptography.ComputeSHA256(pair[1]);
-                return (user, keyHash);
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         [HttpPost]

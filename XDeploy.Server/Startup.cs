@@ -84,6 +84,8 @@ namespace XDeploy.Server
                     pattern: "{controller=Home}/{action=Index}/{id?}");
                 endpoints.MapRazorPages();
             });
+
+            app.UseWebSockets();
         }
     }
 }
