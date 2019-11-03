@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using XDeploy.Core;
@@ -21,11 +23,13 @@ namespace XDeploy.Server.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
+        private readonly string _cachedFilesPath;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, ApplicationDbContext context)
         {
             _logger = logger;
             _context = context;
+            _cachedFilesPath = configuration.GetValue<string>("CacheLocation");
         }
 
         [Route("/")]
@@ -58,27 +62,19 @@ namespace XDeploy.Server.Controllers
             return Content(JsonConvert.SerializeObject(key.Key), "application/json");
         }
 
-        [HttpGet]
-        [Route("/test")]
-        [Authorize]
-        public IActionResult ModelBindingTest([ModelBinder(Name = "id")] Application application)
-        {
-            if (application != null && application.HasOwner(User))
-            {
-                return Content(JsonConvert.SerializeObject(application, Formatting.Indented));
-            }
-            else
-            {
-                return NotFound();
-            }
-        }
-
         [Authorize]
         [HttpPost]
         public IActionResult Delete([ModelBinder(Name = "id")] Application application)
         {
             if (application != null && application.HasOwner(User))
             {
+                //Remove cache directory and all associated files if necessary
+                var path = Path.Join(_cachedFilesPath, application.ID);
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true); 
+                }
+
                 _context.Applications.Remove(application);
                 _context.SaveChanges();
                 return RedirectToAction("Index");
@@ -130,6 +126,7 @@ namespace XDeploy.Server.Controllers
                 };
                 _context.Applications.Add(newApp);
                 _context.SaveChanges();
+                Directory.CreateDirectory(Path.Join(_cachedFilesPath, newApp.ID));
                 return RedirectToAction("Index");
             }
             else
@@ -175,6 +172,24 @@ namespace XDeploy.Server.Controllers
                         _context.Applications.Remove(foundApp);
                         _context.Applications.Add(newApp);
                         _context.SaveChanges();
+
+                        //Remove encrypted or non-encrypted files from the associated cache directory (if possible)
+                        var files = Directory.EnumerateFiles(Path.Join(_cachedFilesPath, newApp.ID), "*.*", SearchOption.AllDirectories);
+                        if (newApp.Encrypted)
+                        {
+                            foreach (var file in files.Where(x => !x.StartsWith(".enc")))
+                            {
+                                System.IO.File.Delete(file);
+                            }
+                        }
+                        else
+                        {
+                            foreach (var file in files.Where(x => x.StartsWith(".enc")))
+                            {
+                                System.IO.File.Delete(file);
+                            }
+                        }
+
                         return RedirectToAction("Index");
                     }
                     else

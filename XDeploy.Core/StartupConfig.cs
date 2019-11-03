@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace XDeploy.Deployer
+namespace XDeploy.Core
 {
     /// <summary>
     /// Represents a startup configuration.
@@ -33,5 +33,10 @@ namespace XDeploy.Deployer
         /// Gets or sets the apps.
         /// </summary>
         public IEnumerable<ApplicationInfo> Apps { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the application will show detailed execution logs.
+        /// </summary>
+        public bool Verbose { get; set; }
     }
 }

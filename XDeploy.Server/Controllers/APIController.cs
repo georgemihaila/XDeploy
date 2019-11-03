@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using XDeploy.Core;
+using XDeploy.Core.IO;
 using XDeploy.Server.Infrastructure;
 using XDeploy.Server.Infrastructure.Data;
 
@@ -88,13 +89,27 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpGet]
+        public IActionResult RemoteTree([FromHeader(Name = "Authorization")] string authString, string id)
+        {
+            var creds = Decode(authString);
+            var app = _context.Applications.Find(id);
+            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            {
+                var tree = new Tree(Path.Combine(_cachedFilesPath, id));
+                tree.Relativize();
+                return Content(JsonConvert.SerializeObject(tree));
+            }
+            return Unauthorized();
+        }
+
+        [HttpGet]
         public IActionResult App([FromHeader(Name = "Authorization")] string authString, string id)
         {
             var creds = Decode(authString);
             var app = _context.Applications.Find(id);
             if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
             {
-                return Content(JsonConvert.SerializeObject(app, Formatting.Indented));
+                return Content(JsonConvert.SerializeObject(new { encrypted = app.Encrypted }, Formatting.Indented));
             }
             return Unauthorized();
         }
@@ -114,7 +129,7 @@ namespace XDeploy.Server.Controllers
                 {
                     return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
                 }
-                location = location.Replace('/', '\\').TrimStart('\\');
+                location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
                 var path = Path.Combine(_cachedFilesPath, id, location);
                 if (System.IO.File.Exists(path) && Cryptography.SHA256CheckSum(path) == checksum)
                 {
@@ -123,6 +138,31 @@ namespace XDeploy.Server.Controllers
                 else
                 {
                     return Content(JsonConvert.SerializeObject(false));
+                }
+            }
+            return Unauthorized();
+        }
+
+        [HttpGet]
+        public IActionResult DownloadFile([FromHeader(Name = "Authorization")] string authString, string id, [FromHeader(Name = "Content-Location")] string location)
+        {
+            var creds = Decode(authString);
+            var app = _context.Applications.Find(id);
+            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            {
+                if (location is null)
+                {
+                    return BadRequest("Content-Location header is required and must specify the relative path of the file.");
+                }
+                location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
+                var path = Path.Combine(_cachedFilesPath, id, location);
+                if (System.IO.File.Exists(path))
+                {
+                    return File(System.IO.File.ReadAllBytes(path), "application/octet-stream");
+                }
+                else
+                {
+                    return NotFound(location);
                 }
             }
             return Unauthorized();
@@ -143,7 +183,7 @@ namespace XDeploy.Server.Controllers
                 {
                     return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
                 }
-                location = location.Replace('/', '\\').TrimStart('\\');
+                location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
                 var path = Path.Combine(_cachedFilesPath, id, location);
                 if (System.IO.File.Exists(path) && Cryptography.SHA256CheckSum(path) == checksum)
                 {

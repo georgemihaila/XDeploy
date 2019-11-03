@@ -4,9 +4,11 @@ VisualStudioVersion = 16.0.29319.158
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XDeploy.Server", "XDeploy.Server\XDeploy.Server.csproj", "{767F937F-12B5-4F9E-B197-C8CB364D26FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDeploy.Core", "XDeploy.Core\XDeploy.Core.csproj", "{00A2179C-C123-4549-A808-38E9B4830CDA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XDeploy.Core", "XDeploy.Core\XDeploy.Core.csproj", "{00A2179C-C123-4549-A808-38E9B4830CDA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDeploy.Deployer", "XDeploy.Deployer\XDeploy.Deployer.csproj", "{AD34EAF7-FDB3-4E23-B6A8-748578EDC845}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XDeploy.Deployer", "XDeploy.Deployer\XDeploy.Deployer.csproj", "{AD34EAF7-FDB3-4E23-B6A8-748578EDC845}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDeploy.Client", "XDeploy.Client\XDeploy.Client.csproj", "{6A4E774D-4DF0-4FFC-BAD6-E0DC2DC49A28}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +28,10 @@ Global
 		{AD34EAF7-FDB3-4E23-B6A8-748578EDC845}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD34EAF7-FDB3-4E23-B6A8-748578EDC845}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD34EAF7-FDB3-4E23-B6A8-748578EDC845}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A4E774D-4DF0-4FFC-BAD6-E0DC2DC49A28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A4E774D-4DF0-4FFC-BAD6-E0DC2DC49A28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A4E774D-4DF0-4FFC-BAD6-E0DC2DC49A28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A4E774D-4DF0-4FFC-BAD6-E0DC2DC49A28}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

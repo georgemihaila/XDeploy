@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net;
 using System.IO;
 using Newtonsoft.Json;
+using XDeploy.Core.IO;
 
 namespace XDeploy.Core
 {
@@ -30,7 +31,7 @@ namespace XDeploy.Core
 
         public async Task<string> UploadFileIfNotExistsAsync(string id, string baseDirectory, string fullFilePath)
         {
-            var contentLocation = fullFilePath.Replace(baseDirectory, string.Empty).TrimStart('\\');
+            var contentLocation = fullFilePath.Replace(baseDirectory, string.Empty).Replace("%5C", "\\").TrimStart('\\');
             var checksum = Cryptography.SHA256CheckSum(fullFilePath);
 
             //Check if file already exists
@@ -70,21 +71,23 @@ namespace XDeploy.Core
                 return "Exists";
             }
         }
-        /*
-         *    try
-            {
-                _ = await request.GetResponseAsync();
-            }
-            catch (WebException e)
-            {
-                HttpStatusCode? status = (e.Response as HttpWebResponse)?.StatusCode;
-                if (status != null && status.Value == HttpStatusCode.SeeOther)
-                {
-                    return "Already exists";
-                }
-            }
-         */
+
         private async Task<T> GETAsync<T>(string path) => JsonConvert.DeserializeObject<T>(await GETRequestAsync(path));
+
+        public async Task<Tree> GetRemoteTreeAsync(string id) => JsonConvert.DeserializeObject<Tree>(await GETRequestAsync("/RemoteTree?id=" + id));
+
+        public async Task<byte[]> DownloadFileAsync(string id, string relativePath)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/DownloadFile?id=" + id);
+            request.Method = "GET";
+            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            request.Headers[HttpRequestHeader.ContentLocation] = relativePath;
+            var response = (HttpWebResponse)await request.GetResponseAsync();
+            using (var reader = new BinaryReader(response.GetResponseStream()))
+            {
+                return reader.ReadBytes(Convert.ToInt32(response.Headers[HttpRequestHeader.ContentLength]));
+            }
+        }
 
         private async Task<string> GETRequestAsync(string path)
         {

@@ -6,7 +6,7 @@
   "Apps": [
     {
       "ID": "bnd6qHeUr9",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug",
+      "Location": "C:\\Users\\gmihaila\\source\\repos\\RemoteDeploy\\XDeploy.Client\\bin\\Debug\\netcoreapp3.1\\deploy_directory",
       "EncryptionKey": "3fc9b689459d738f8c88a3a48aa9e33542016b7a4052e001aaa536fca74813cb7dd530c4d36da47cd33396718ef1fa1e8c0f7d91ee551d7fdc1c73aa65edb454"
     }
   ],

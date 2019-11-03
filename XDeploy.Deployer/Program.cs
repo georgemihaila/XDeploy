@@ -9,16 +9,18 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using XDeploy.Core;
+using XDeploy.Core.IO;
+using XDeploy.Core.IO.Extensions;
 
 namespace XDeploy.Deployer
 {
     class Program
     {
-        //xdd --Endpoint val --email val --key val --app val --path val
         private const string NL = "\r\n";
         private const string NLT = "\r\n\t";
         private const string ConfigFile = "config.json";
         private const string TimeFormat = "HH:mm:ss";
+        private static bool _verbose;
         private static XDeployAPI _api;
         
         static async Task Main(string[] args)
@@ -38,9 +40,10 @@ namespace XDeploy.Deployer
                 Console.WriteLine("Malformed configuration file");
                 return;
             }
+            _verbose = config.Verbose;
             _api = new XDeployAPI(config.Endpoint, config.Email, config.APIKey);
 
-            //Validate credentials
+            WriteLine_Verbose("Validating credentials...");
             if (await _api.ValidateCredentialsAsync())
             {
                 //Validate each app
@@ -48,7 +51,9 @@ namespace XDeploy.Deployer
                 {
                     try
                     {
-                        _ = await _api.GetAppDetailsAsync(app.ID);
+                        WriteLine_Verbose($"Validating app {app.ID}...");
+                        dynamic details = JsonConvert.DeserializeObject(await _api.GetAppDetailsAsync(app.ID));
+                        app.Encrypted = details.encrypted;
                     }
                     catch
                     {
@@ -60,16 +65,38 @@ namespace XDeploy.Deployer
                         Console.WriteLine("Invalid application path: {0}", app.Location);
                         return;
                     }
+                    //Force push all files on server to ensure synchronization
+                    WriteLine_Verbose($"Force syncing {app.ID}...");
+                    await ForceSyncAsync(app);
                 }
+
+
+                //Build tree dictionary to calculate differences between files
+                var treeDict = new Dictionary<string, Tree>();
+                config.Apps.ToList().ForEach(x => 
+                {
+                    WriteLine_Verbose($"Building file tree for app {x.ID}");
+                    treeDict.Add(x.ID, new Tree(x.Location));
+                });
+
                 var server = new SyncSignalServer(config.SyncServerPort);
                 server.SyncSignalReceived += async (_, id) =>
                 {
                     Func<ApplicationInfo, bool> idSelector = app => app.ID == id;
                     if (config.Apps.Any(idSelector))
                     {
-                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - Sync signal received for app {id}");
-                        var res = await SyncFiles(config.Apps.First(idSelector));
-                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {res.New} file{((res.New != 1)?"s":string.Empty)} uploaded.");
+                        var app = config.Apps.First(idSelector);
+                        var newTree = new Tree(app.Location);
+                        var diffs = newTree.Diff(treeDict[id], Tree.FileUpdateCheckType.DateTime); //Local trees use DateTime diffs because they are faster
+
+                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {id} - Sync signal received");
+                        WriteLine_Verbose($"{DateTime.Now.ToString(TimeFormat)} - {id} - local changes:{NL}" + diffs.Format());
+
+                        var res = await SyncFiles(config.Apps.First(idSelector), diffs);
+
+                        Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {id} - {res.New} file{((res.New != 1) ? "s" : string.Empty)} uploaded.");
+
+                        treeDict[id] = newTree;
                     }
                 };
                 server.Start();
@@ -92,14 +119,32 @@ namespace XDeploy.Deployer
             }
         }
 
-        private static async Task<(int AlreadyExisting, int New)> SyncFiles(ApplicationInfo application)
+        private static async Task<(int AlreadyExisting, int New)> ForceSyncAsync(ApplicationInfo application)
         {
+            if (application is null)
+                throw new ArgumentNullException(nameof(application));
+
             var result = (0, 0);
-            foreach (var file in Directory.EnumerateFiles(application.Location, "*.*", SearchOption.AllDirectories))
+            var allFiles = Directory.EnumerateFiles(application.Location, "*.*", SearchOption.AllDirectories);
+            foreach (var file in allFiles)
             {
-                if ((new FileInfo(file)).Length > 30 * 1024 * 1024)
-                    continue; //30MB max
-                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, file);
+#if DEBUG //30MB max uploads while debugging; can be changed in app.config after release; too lazy to test it r/n
+                if ((new System.IO.FileInfo(file)).Length > 30 * 1024 * 1024)
+                    continue;
+#endif
+                //Encrypt file
+                string filename = file;
+                if (application.Encrypted)
+                {
+                    Cryptography.AES256FileEncrypt(file, application.EncryptionKey);
+                    filename += ".enc";
+                }
+                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, filename);
+                //Delete encrypted file
+                if (application.Encrypted)
+                {
+                    File.Delete(filename);
+                }
                 if (res == "Exists")
                 {
                     result.Item1++;
@@ -110,6 +155,62 @@ namespace XDeploy.Deployer
                 }
             }
             return result;
+        }
+
+        private static async Task<(int AlreadyExisting, int New)> SyncFiles(ApplicationInfo application, IEnumerable<IODifference> diffs)
+        {
+            if (application is null)
+                throw new ArgumentNullException(nameof(application));
+            if (application.Encrypted && string.IsNullOrEmpty(application.EncryptionKey))
+                throw new ArgumentNullException(nameof(application.EncryptionKey));
+            if (diffs is null)
+                throw new ArgumentNullException(nameof(diffs));
+
+            var result = (0, 0);
+            var allFiles = diffs.Where(x =>
+                (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update) &&
+                x.Type == IODifference.ObjectType.File)
+                .Select(x => x.Path);
+            foreach (var file in allFiles)
+            {
+#if DEBUG //30MB max uploads while debugging; can be changed in app.config after release; too lazy to test it r/n
+                if ((new System.IO.FileInfo(file)).Length > 30 * 1024 * 1024)
+                    continue;
+#endif
+                //Encrypt file
+                string filename = file;
+                if (application.Encrypted)
+                {
+                    Cryptography.AES256FileEncrypt(file, application.EncryptionKey);
+                    filename += ".enc";
+                }
+                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, filename);
+                //Delete encrypted file
+                if (application.Encrypted)
+                {
+                    File.Delete(filename);
+                }
+                if (res == "Exists")
+                {
+                    result.Item1++;
+                }
+                else
+                {
+                    result.Item2++;
+                }
+            }
+            return result;
+        }
+
+        private static void WriteLine_Verbose(params object[] args)
+        {
+            if (_verbose)
+            {
+                foreach(var x in args)
+                {
+                    Console.WriteLine(x);
+                }
+            }
         }
     }
 }
