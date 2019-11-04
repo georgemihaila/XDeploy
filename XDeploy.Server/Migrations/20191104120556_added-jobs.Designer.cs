@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using XDeploy.Server.Infrastructure.Data;
 
 namespace XDeploy.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20191104120556_added-jobs")]
+    partial class addedjobs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,11 +86,8 @@ namespace XDeploy.Server.Migrations
 
             modelBuilder.Entity("XDeploy.Server.Infrastructure.Data.ExpectedFile", b =>
                 {
-                    b.Property<string>("ID")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("Checksum")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Filename")
                         .HasColumnType("nvarchar(max)");
@@ -96,7 +95,7 @@ namespace XDeploy.Server.Migrations
                     b.Property<string>("ParentJobID")
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("ID");
+                    b.HasKey("Checksum");
 
                     b.HasIndex("ParentJobID");
 

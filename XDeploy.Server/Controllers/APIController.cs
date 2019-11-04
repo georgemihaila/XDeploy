@@ -27,35 +27,43 @@ namespace XDeploy.Server.Controllers
             _cachedFilesPath = configuration.GetValue<string>("CacheLocation");
         }
 
+        /// <summary>
+        /// <para>Validates a user's credentials.</para>
+        /// <para>POST /api/ValidateCredentials</para>
+        /// <para>Headers: ["Authorization": "Basic [...]"]</para>
+        /// </summary>
         [HttpPost]
-        public IActionResult ValidateCredentials([FromHeader(Name = "Authorization")] string authString)
+        public IActionResult ValidateCredentials()
         {
-            if (ValidateCredentials(Decode(authString)))
+            if (ValidateCredentials(Request))
             {
                 return Ok();
             }
             return Unauthorized();
         }
 
+        /// <summary>
+        /// <para>Lists a user's applications.</para>
+        /// <para>GET /api/ListApps</para>
+        /// <para>Headers: ["Authorization": "Basic [...]"]</para>
+        /// </summary>
         [HttpGet]
-        public IActionResult ListApps([FromHeader(Name = "Authorization")] string authString)
+        public IActionResult ListApps()
         {
-            var creds = Decode(authString);
-            if (ValidateCredentials(creds))
+            if (ValidateRequest(Request, RequestValidationType.Credentials))
             {
-                return Content(JsonConvert.SerializeObject(_context.Applications.Where(x => x.OwnerEmail == creds.Value.Email), Formatting.Indented));
+                var user = GetCredentialsFromAuthorizationHeader(Request).Value;
+                return Content(JsonConvert.SerializeObject(_context.Applications.Where(x => x.OwnerEmail == user.Email), Formatting.Indented));
             }
             return Unauthorized();
         }
 
         [HttpGet]
-        public IActionResult RemoteTree([FromHeader(Name = "Authorization")] string authString, string id)
+        public IActionResult RemoteTree([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
         {
-            var creds = Decode(authString);
-            var app = _context.Applications.Find(id);
-            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
-                var tree = new Tree(Path.Combine(_cachedFilesPath, id));
+                var tree = new Tree(Path.Combine(_cachedFilesPath, application.ID));
                 tree.Relativize();
                 return Content(JsonConvert.SerializeObject(tree));
             }
@@ -63,62 +71,55 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult App([FromHeader(Name = "Authorization")] string authString, string id)
+        public IActionResult App([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
         {
-            var creds = Decode(authString);
-            var app = _context.Applications.Find(id);
-            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
-                return Content(JsonConvert.SerializeObject(new { encrypted = app.Encrypted }, Formatting.Indented));
+                return Content(JsonConvert.SerializeObject(new { encrypted = application.Encrypted }, Formatting.Indented));
             }
             return Unauthorized();
         }
 
         [HttpGet]
-        public IActionResult HasFile([FromHeader(Name = "Authorization")] string authString, string id, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum)
+        public IActionResult HasFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum)
         {
-            var creds = Decode(authString);
-            var app = _context.Applications.Find(id);
-            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            if (location is null)
             {
-                if (location is null)
-                {
-                    return BadRequest("Content-Location header is required and must specify the relative path of the file.");
-                }
-                if (checksum is null)
-                {
-                    return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
-                }
+                return BadRequest("Content-Location header is required and must specify the relative path of the file.");
+            }
+            if (checksum is null)
+            {
+                return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
+            }
+            var creds = Decode(authString);
+            if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
+            {
+
                 location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
-                var path = Path.Combine(_cachedFilesPath, id, location);
-                if (System.IO.File.Exists(path) && Cryptography.SHA256CheckSum(path) == checksum)
-                {
-                    return Content(JsonConvert.SerializeObject(true));
-                }
-                else
-                {
-                    return Content(JsonConvert.SerializeObject(false));
-                }
+                var path = Path.Combine(_cachedFilesPath, application.ID);
+                var res = (new FileManager(path).HasFile(location, checksum));
+                return Content(JsonConvert.SerializeObject(res));
             }
             return Unauthorized();
         }
 
         [HttpGet]
-        public IActionResult DownloadFile([FromHeader(Name = "Authorization")] string authString, string id, [FromHeader(Name = "Content-Location")] string location)
+        public IActionResult DownloadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location)
         {
-            var creds = Decode(authString);
-            var app = _context.Applications.Find(id);
-            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            if (location is null)
             {
-                if (location is null)
-                {
-                    return BadRequest("Content-Location header is required and must specify the relative path of the file.");
-                }
+                return BadRequest("Content-Location header is required and must specify the relative path of the file.");
+            }
+
+            if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
+            {
+
                 location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
-                var path = Path.Combine(_cachedFilesPath, id, location);
-                if (System.IO.File.Exists(path))
+                var path = Path.Combine(_cachedFilesPath, application.ID);
+                var fileManager = new FileManager(path);
+                if (fileManager.HasFile(location))
                 {
-                    return File(System.IO.File.ReadAllBytes(path), "application/octet-stream");
+                    return File(fileManager.GetFileBytes(location), "application/octet-stream");
                 }
                 else
                 {
@@ -129,44 +130,96 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpPost]
-        public IActionResult UploadFile([FromHeader(Name = "Authorization")] string authString, string id, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum)
+        public IActionResult DeleteDeploymentJob([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [ModelBinder(BinderType = typeof(IDDeploymentJobBinder), Name = "jobid")] DeploymentJob deploymentJob)
         {
-            var creds = Decode(authString);
-            var app = _context.Applications.Find(id);
-            if (ValidateCredentials(creds) && ValidateIPIfNecessary(app) && app.OwnerEmail == creds.Value.Email)
+            if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                if (location is null)
+                if (deploymentJob is null)
                 {
-                    return BadRequest("Content-Location header is required and must specify the relative path of the file.");
+                    return Ok();
                 }
-                if (checksum is null)
+                if (deploymentJob.ApplicationID != application.ID)
                 {
-                    return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
+                    return BadRequest("Deployment job doesn't match application.");
                 }
+                _context.ExpectedFile.RemoveRange(_context.ExpectedFile.Where(x => x.ParentJob.ID == deploymentJob.ID));
+                _context.DeploymentJobs.Remove(_context.DeploymentJobs.First(x => x.ID == deploymentJob.ID));
+                _context.SaveChanges();
+                StaticWebSocketsWorkaround.TriggerUpdate(application.ID);
+                return Created(new Uri("api/DeleteDeploymentJob", UriKind.Relative), deploymentJob.ID);
+            }
+            return Unauthorized();
+        }
+
+        [HttpPost]
+        public IActionResult CreateDeploymentJob([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<FutureUploadedFileInfo> expected)
+        {
+            if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
+            {
+                var job = new DeploymentJob()
+                {
+                    ID = RNG.GetRandomString(8, RNG.StringType.Numeric).TrimStart('0'),
+                    ApplicationID = application.ID
+                };
+                job.ExpectedFiles = expected.Select(x => new ExpectedFile()
+                {
+                    ID = RNG.GetRandomString(8, RNG.StringType.Alphanumeric),
+                    Checksum = x.Checksum,
+                    Filename = x.Filename.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\'),
+                    ParentJob = job 
+                }).ToList();
+                _context.DeploymentJobs.Add(job);
+                _context.SaveChanges();
+                return Created(new Uri("api/CreateDeploymentJob", UriKind.Relative), job.ID);
+            }
+            return Unauthorized();
+        }
+
+        [HttpPost]
+        public IActionResult UploadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum, [ModelBinder(BinderType = typeof(IDDeploymentJobBinder), Name = "jobid")] DeploymentJob deploymentJob)
+        {
+            if (location is null)
+            {
+                return BadRequest("Content-Location header is required and must specify the relative path of the file.");
+            }
+            if (checksum is null)
+            {
+                return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
+            }
+            if (deploymentJob is null)
+            {
+                return BadRequest("Parameter jobid is required and must specify a valid deployment job id.");
+            }
+
+            if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
+            {
                 location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
-                var path = Path.Combine(_cachedFilesPath, id, location);
-                if (System.IO.File.Exists(path) && Cryptography.SHA256CheckSum(path) == checksum)
+                if (deploymentJob.ApplicationID != application.ID)
+                {
+                    return BadRequest("Deployment job doesn't match application.");
+                }
+                if (!deploymentJob.ExpectedFiles.Any(x => x.Checksum == checksum && x.Filename == location))
+                {
+                    return BadRequest("Unexpected file.");
+                }
+                var path = Path.Combine(_cachedFilesPath, application.ID);
+                var fileManager = new FileManager(path);
+                if (fileManager.HasFile(location, checksum))
                 {
                     return StatusCode(303);
                 }
                 else
                 {
-                    var dir = Path.Combine(path.Split(Path.DirectorySeparatorChar)[..^1]);
-                    Directory.CreateDirectory(dir);
-                    using (var stream = System.IO.File.Create(path))
+                    fileManager.WriteFile(location, Request.BodyReader.AsStream(), (int)Request.ContentLength);
+
+                    _context.ExpectedFile.Remove(_context.ExpectedFile.First(x => x.ParentJob.ID == deploymentJob.ID && x.Checksum == checksum));
+                    if (deploymentJob.ExpectedFiles.Count == 0)
                     {
-                        byte[] buffer = null;
-                        var requestStream = Request.BodyReader.AsStream();
-                        using (var reader = new BinaryReader(requestStream))
-                        {
-                            buffer = reader.ReadBytes((int)Request.ContentLength);
-                        }
-                        stream.Write(buffer, 0, buffer.Length);
-                        stream.Close();
-                        app.LastUpdate = DateTime.Now;
-                        _context.SaveChanges();
-                        StaticWebSocketsWorkaround.TriggerUpdate(app.ID);
+                        _context.DeploymentJobs.Remove(deploymentJob);
+                        StaticWebSocketsWorkaround.TriggerUpdate(application.ID);
                     }
+                    application.LastUpdate = DateTime.Now;
+                    _context.SaveChanges();
                 }
                 return Created(new Uri(location, UriKind.Relative), null);
             }

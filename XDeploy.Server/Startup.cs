@@ -44,6 +44,7 @@ namespace XDeploy.Server
             services.AddMvc(options =>
             {
                 options.ModelBinderProviders.Insert(0, new IDApplicationBinderProvider());
+                options.ModelBinderProviders.Insert(1, new IDDeploymentJobBinderProvider());
             });
 
             services.AddControllersWithViews();

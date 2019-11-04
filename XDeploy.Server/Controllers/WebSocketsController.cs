@@ -44,23 +44,12 @@ namespace XDeploy.Server.Controllers
                 var lastUpdate = app.LastUpdate;
                 await Task.Run(async () =>
                 {
-                    var sw = new System.Diagnostics.Stopwatch();
-                    var trigger_after_ms = 5 * 1000; //If multiple requests are received, wait for 5 seconds since the last one, then send sync signal
+                    StaticWebSocketsWorkaround.RegisterOnAppUpdate(id, async (data) =>
+                    {
+                        await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = data }));
+                    });
                     while (webSocket.State == WebSocketState.Open)
-                    {/*
-                        StaticWebSocketsWorkaround.RegisterOnAppUpdate(id, async(data) => 
-                        {
-                            sw.Restart();
-                            while (sw.IsRunning)
-                            {
-                                Thread.Sleep(trigger_after_ms);
-                                if (sw.Elapsed.TotalMilliseconds > trigger_after_ms && sw.IsRunning)
-                                {
-                                    sw.Stop();
-                                    await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = data }));
-                                }
-                            }
-                        });*/
+                    {
                         await Task.Delay(1000);
                     }
                     await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection terminated.", CancellationToken.None);

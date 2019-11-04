@@ -1,0 +1,142 @@
+{
+  "BaseDirectory": {
+    "Name": "Debug",
+    "FullPath": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug",
+    "Subdirectories": [
+      {
+        "Name": "app.publish",
+        "FullPath": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\app.publish",
+        "Subdirectories": [],
+        "Files": [
+          {
+            "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\app.publish\\ReassignerWPF.exe",
+            "SHA256CheckSum": "afb301de6e484356270781dbadc9e46c2b1efb7bd2e45d0450dd49ded2a72e12",
+            "LastModified": "2019-10-15T14:17:04.6047976+03:00"
+          }
+        ]
+      }
+    ],
+    "Files": [
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\AutoClosingMessageBox.dll",
+        "SHA256CheckSum": "8f94f24b6c089c86acfb94c592820731b6f303a694d8aa98407135252f4d1e20",
+        "LastModified": "2017-11-03T20:57:52+02:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\cached.json",
+        "SHA256CheckSum": "7e18d0a384437d2d847339e32a9c0e82cb0dded5ea522d3f295fde3368b2c99c",
+        "LastModified": "2019-11-01T12:46:16.9520901+02:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Common.Logging.Core.dll",
+        "SHA256CheckSum": "3d806326bfce9ddacdd922bdf9c96e45de9172f45a8a0af4cc515381cea01984",
+        "LastModified": "2017-08-16T06:51:46+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Common.Logging.Core.pdb",
+        "SHA256CheckSum": "c32d2bcd1a82b43f19ef76169b80d79f8fb66dd8127d81ca972255d9ff9be275",
+        "LastModified": "2017-08-16T06:51:46+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Common.Logging.Core.xml",
+        "SHA256CheckSum": "ca61f734b81ed76607f62b7b211092cd30c77e4f5dcdcad2e6f0139a921068a2",
+        "LastModified": "2017-08-16T06:51:46+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Common.Logging.dll",
+        "SHA256CheckSum": "2155289b62e2a05c322f7eb23ffb9f87fe48923bec12722a117d00857370bb0e",
+        "LastModified": "2017-08-16T06:51:42+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Common.Logging.pdb",
+        "SHA256CheckSum": "6231bb72d2103f4c2e3da860347e5ac34018bc1b1b2475b7c85ab5d8ca4e0ac0",
+        "LastModified": "2017-08-16T06:51:42+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Common.Logging.xml",
+        "SHA256CheckSum": "4c17abcf6b2e63beacc9c25faf64e70c2fb8c5903bd2b7a2a2959dada22a1b7a",
+        "LastModified": "2017-08-16T06:51:42+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\creds",
+        "SHA256CheckSum": "e038b2c8ef4d3936edd239bc1a73036eb3e0e10cd07cdf92f0d5455fdfc9f564",
+        "LastModified": "2019-09-05T18:08:43.745166+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\DotNetBrowser.Chromium32.dll",
+        "SHA256CheckSum": "ef048b10fb87685046315169c52692ca1289dc0a2a8551029131dfbb32b22424",
+        "LastModified": "2019-08-19T15:31:32+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\DotNetBrowser.Chromium64.dll",
+        "SHA256CheckSum": "2325acb6654c3f6dc808e1d484465485ab747e0df9e034172f1487ba138ec2b0",
+        "LastModified": "2019-08-19T15:31:34+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\DotNetBrowser.dll",
+        "SHA256CheckSum": "9b1029be47d127366bf12d7d9936f2738f677b551cee329baccf7e16be6107e4",
+        "LastModified": "2019-08-19T15:31:34+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\DotNetBrowser.xml",
+        "SHA256CheckSum": "8b79f8d9df4a052d484f4234aa7edd1f1fbce89e197f7a0407c79453c4908d2e",
+        "LastModified": "2019-08-19T15:31:34+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Newtonsoft.Json.dll",
+        "SHA256CheckSum": "3598cccad5b535fea6f93662107a4183bfd6167bf1d0f80260436093edc2e3af",
+        "LastModified": "2019-04-22T01:06:16+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Newtonsoft.Json.xml",
+        "SHA256CheckSum": "f32ed922fe5b22dd693e160aee4f0dcab753ebd740bed40490ae4179274b4b49",
+        "LastModified": "2019-04-22T00:57:26+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\NHttp.dll",
+        "SHA256CheckSum": "c0433ee6583ccda71b3b59593b21242dfa62c0212f71fd78b4349728863e89f1",
+        "LastModified": "2015-12-05T17:17:04+02:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\ReassignerWPF.application",
+        "SHA256CheckSum": "a3a17439c71470a876096a6818f09fe8035fc25723234650e843ddde5b971fd0",
+        "LastModified": "2019-10-15T14:17:06.7171508+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\ReassignerWPF.exe",
+        "SHA256CheckSum": "afb301de6e484356270781dbadc9e46c2b1efb7bd2e45d0450dd49ded2a72e12",
+        "LastModified": "2019-10-15T14:17:04.6047976+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\ReassignerWPF.exe.config",
+        "SHA256CheckSum": "ae5e7fa8373b273fad07e0486cebfd88c18f9517ba609c2b8e6534f5d9e53dcb",
+        "LastModified": "2018-10-02T11:59:54.4957461+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\ReassignerWPF.exe.manifest",
+        "SHA256CheckSum": "fcf65295241a8d705435eb8323f42b3ffe88b6d45e3f8b04961cf05ec1666da7",
+        "LastModified": "2019-10-15T14:17:06.5426167+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\ReassignerWPF.pdb",
+        "SHA256CheckSum": "b07c1fd4c97a1fc5d6d4a026652e789707a401f5e33d7512799172eb5279c24c",
+        "LastModified": "2019-10-15T14:17:04.6047976+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Torschlusspanik.dll",
+        "SHA256CheckSum": "118fa28729246e2b30730f0cd402e7a2aff84ff081280775bed76cb8ea30de02",
+        "LastModified": "2019-10-15T14:17:00.8638076+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\Torschlusspanik.pdb",
+        "SHA256CheckSum": "1e9c645d87e8f35b15a6661a5ce723281d4b0839adac544e12153c1397628538",
+        "LastModified": "2019-10-15T14:17:00.8638076+03:00"
+      },
+      {
+        "Name": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug\\ur-pairs.json",
+        "SHA256CheckSum": "cf7bcd05ef360e7fe860f472aefa5cefece37d678f8baa3275847983330d6a91",
+        "LastModified": "2019-02-26T12:46:21.8542685+02:00"
+      }
+    ]
+  }
+}

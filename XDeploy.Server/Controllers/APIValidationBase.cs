@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace XDeploy.Server.Controllers
     public abstract class APIValidationBase : ControllerBase
     {
         protected readonly ApplicationDbContext _context;
+        private readonly string _authHeaderName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="APIValidationBase"/> class.
@@ -23,6 +25,45 @@ namespace XDeploy.Server.Controllers
         protected APIValidationBase(ApplicationDbContext context)
         {
             _context = context;
+            _authHeaderName = "Authorization";
+        }
+
+        /// <summary>
+        /// Validates a user's credentials (taken from the Authorization header) against the database context and returns a result indicating whether they are valid or not.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <returns></returns>
+        protected bool ValidateCredentials(HttpRequest request) => ValidateCredentials(GetCredentialsFromAuthorizationHeader(request));
+
+        /// <summary>
+        /// Gets a user's credentials from the Authorization header.
+        /// </summary>
+        protected (string Email, string KeyHash)? GetCredentialsFromAuthorizationHeader(HttpRequest request)
+        {
+            if (request.Headers.ContainsKey(_authHeaderName))
+            {
+                return Decode(request.Headers[_authHeaderName]);
+            }
+            return null;
+        }
+
+        protected enum RequestValidationType { Credentials, CredentialsAndOwner, CredentialsOwnerAndIP }
+
+        protected bool ValidateRequest(HttpRequest request, RequestValidationType validationType, Application application = null)
+        {
+            var creds = GetCredentialsFromAuthorizationHeader(request);
+            if (ValidateCredentials(creds))
+            {
+                if (application is null)
+                {
+                    return false;
+                }
+                return (validationType == RequestValidationType.CredentialsAndOwner) ? application.OwnerEmail.ToUpper() == creds.Value.Email.ToUpper() : application.OwnerEmail.ToUpper() == creds.Value.Email.ToUpper() && ValidateIPIfNecessary(application);
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>

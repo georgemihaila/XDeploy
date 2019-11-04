@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -22,6 +23,13 @@ namespace XDeploy.Server.Infrastructure.Data
 
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<DeploymentJob>()
+                .HasMany(x => x.ExpectedFiles)
+                .WithOne(x => x.ParentJob);
+        }
+
         /// <summary>
         /// Gets or sets the API keys.
         /// </summary>
@@ -31,6 +39,16 @@ namespace XDeploy.Server.Infrastructure.Data
         /// Gets or sets the applications.
         /// </summary>
         public DbSet<Application> Applications { get; set; }
+
+        /// <summary>
+        /// Gets or sets the deployment jobs.
+        /// </summary>
+        public DbSet<DeploymentJob> DeploymentJobs { get; set; }
+
+        /// <summary>
+        /// Gets or sets the expected files.
+        /// </summary>
+        public DbSet<ExpectedFile> ExpectedFile { get; set; }
 
         /// <summary>
         /// Determines whether the specified user has at least one API key.

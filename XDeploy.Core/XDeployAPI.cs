@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using XDeploy.Core.IO;
 using WebSocketSharp;
+using System.Linq;
 
 namespace XDeploy.Core
 {
@@ -30,7 +31,11 @@ namespace XDeploy.Core
 
         public async Task<string> GetAppDetailsAsync(string id) => await GETRequestAsync("/App?id=" + id);
 
-        public async Task<string> UploadFileIfNotExistsAsync(string id, string baseDirectory, string fullFilePath)
+        public async Task<int> CreateDeploymentJobAsync(string id, IEnumerable<FutureUploadedFileInfo> expected) => await POSTRequestAsync<int>("/CreateDeploymentJob?id=" + id, expected);
+
+        public async Task DeleteDeploymentJobAsync(string id, int jobid) => await POSTSimpleAsync("/DeleteDeploymentJob?id=" + id + "&jobid=" + jobid);
+
+        public async Task<string> UploadFileIfNotExistsAsync(string id, string baseDirectory, string fullFilePath, int jobid)
         {
             var contentLocation = fullFilePath.Replace(baseDirectory, string.Empty).Replace("%5C", "\\").TrimStart('\\');
             var checksum = Cryptography.SHA256CheckSum(fullFilePath);
@@ -49,7 +54,7 @@ namespace XDeploy.Core
             }
             if (!exists)
             {
-                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + id);
+                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + id + "&jobid=" + jobid);
                 request2.Method = "POST";
                 request2.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
                 request2.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
@@ -62,9 +67,17 @@ namespace XDeploy.Core
                     stream.Close();
                 }
 
-                using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
+                try
                 {
-                    return reader.ReadToEnd();
+                    using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }
+                catch 
+                {
+                    
+                    return "Error";
                 }
             }
             else
@@ -115,6 +128,14 @@ namespace XDeploy.Core
             }
         }
 
+        private async Task POSTSimpleAsync(string path)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
+            request.Method = "POST";
+            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            var response = (HttpWebResponse)await request.GetResponseAsync();
+        }
+
         private async Task<bool> POSTRequestAsync(string path)
         {
             var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
@@ -125,6 +146,24 @@ namespace XDeploy.Core
                 return true;
 
             return false;
+        }
+        private async Task<T> POSTRequestAsync<T>(string path, object content)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
+            request.Method = "POST";
+            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            request.Headers[HttpRequestHeader.ContentType] = "application/json";
+            using (var stream = await request.GetRequestStreamAsync())
+            {
+                var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(content));
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Close();
+            }
+            var response = (HttpWebResponse)await request.GetResponseAsync();
+            using (var reader = new StreamReader(response.GetResponseStream()))
+            {
+                return JsonConvert.DeserializeObject<T>(reader.ReadToEnd());
+            }
         }
     }
 }

@@ -67,7 +67,8 @@ namespace XDeploy.Deployer
                     }
                     //Force push all files on server to ensure synchronization
                     WriteLine_Verbose($"Force syncing {app.ID}...");
-                    await ForceSyncAsync(app);
+                    var res = await ForceSyncAsync(app);
+                    WriteLine_Verbose($"{res.New} new files{NL}{res.AlreadyExisting} existing");
                 }
 
 
@@ -119,31 +120,43 @@ namespace XDeploy.Deployer
             }
         }
 
+        private static void ClearLocallyEncryptedFiles(ApplicationInfo application)
+        {
+            foreach(var x in Directory.EnumerateFiles(application.Location, "*.enc", SearchOption.AllDirectories).ToList())
+            {
+                File.Delete(x);
+            }
+        }
+
         private static async Task<(int AlreadyExisting, int New)> ForceSyncAsync(ApplicationInfo application)
         {
             if (application is null)
                 throw new ArgumentNullException(nameof(application));
+            ClearLocallyEncryptedFiles(application);
 
             var result = (0, 0);
-            var allFiles = Directory.EnumerateFiles(application.Location, "*.*", SearchOption.AllDirectories);
+            var allFiles = Directory.EnumerateFiles(application.Location, "*.*", SearchOption.AllDirectories).Select(x => x + ((application.Encrypted) ? ".enc" : string.Empty)).ToList();
+            if (application.Encrypted)
+            {
+                allFiles.ToList().ForEach(x =>
+                {
+                    Cryptography.AES256FileEncrypt(x[0..^4], application.EncryptionKey);
+                });
+            }
+            var fakeExpected = allFiles.Select(x => new FutureUploadedFileInfo() { Filename = x.Replace(application.Location, string.Empty), Checksum = Cryptography.SHA256CheckSum(x) });
+            var jobid = await _api.CreateDeploymentJobAsync(application.ID, fakeExpected);
             foreach (var file in allFiles)
             {
 #if DEBUG //30MB max uploads while debugging; can be changed in app.config after release; too lazy to test it r/n
                 if ((new System.IO.FileInfo(file)).Length > 30 * 1024 * 1024)
                     continue;
 #endif
-                //Encrypt file
-                string filename = file;
-                if (application.Encrypted)
-                {
-                    Cryptography.AES256FileEncrypt(file, application.EncryptionKey);
-                    filename += ".enc";
-                }
-                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, filename);
+                WriteLine_Verbose($"Uploading {file}...");
+                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, file, jobid);
                 //Delete encrypted file
                 if (application.Encrypted)
                 {
-                    File.Delete(filename);
+                    File.Delete(file);
                 }
                 if (res == "Exists")
                 {
@@ -154,6 +167,7 @@ namespace XDeploy.Deployer
                     result.Item2++;
                 }
             }
+            await _api.DeleteDeploymentJobAsync(application.ID, jobid);
             return result;
         }
 
@@ -165,30 +179,32 @@ namespace XDeploy.Deployer
                 throw new ArgumentNullException(nameof(application.EncryptionKey));
             if (diffs is null)
                 throw new ArgumentNullException(nameof(diffs));
+            ClearLocallyEncryptedFiles(application);
 
+            Func<IODifference, bool> selector = x => (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update) &&
+                 x.Type == IODifference.ObjectType.File;
             var result = (0, 0);
-            var allFiles = diffs.Where(x =>
-                (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update) &&
-                x.Type == IODifference.ObjectType.File)
-                .Select(x => x.Path);
+            var allFiles = diffs.Where(selector).Select(x => x.Path + ((application.Encrypted) ? ".enc" : string.Empty)).ToList();
+            if (application.Encrypted)
+            {
+                allFiles.ToList().ForEach(x =>
+                {
+                    Cryptography.AES256FileEncrypt(x[0..^4], application.EncryptionKey);
+                });
+            }
+            var jobid = await _api.CreateDeploymentJobAsync(application.ID, diffs.Where(selector).Select(x => new FutureUploadedFileInfo() { Filename = x.Path.Replace(application.Location, string.Empty) + ((application.Encrypted) ? ".enc" : string.Empty), Checksum = Cryptography.SHA256CheckSum(x.Path) }));
             foreach (var file in allFiles)
             {
 #if DEBUG //30MB max uploads while debugging; can be changed in app.config after release; too lazy to test it r/n
                 if ((new System.IO.FileInfo(file)).Length > 30 * 1024 * 1024)
                     continue;
 #endif
-                //Encrypt file
-                string filename = file;
-                if (application.Encrypted)
-                {
-                    Cryptography.AES256FileEncrypt(file, application.EncryptionKey);
-                    filename += ".enc";
-                }
-                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, filename);
+                WriteLine_Verbose($"Uploading {file}...");
+                var res = await _api.UploadFileIfNotExistsAsync(application.ID, application.Location, file, jobid);
                 //Delete encrypted file
                 if (application.Encrypted)
                 {
-                    File.Delete(filename);
+                    File.Delete(file);
                 }
                 if (res == "Exists")
                 {
@@ -199,6 +215,7 @@ namespace XDeploy.Deployer
                     result.Item2++;
                 }
             }
+            await _api.DeleteDeploymentJobAsync(application.ID, jobid);
             return result;
         }
 

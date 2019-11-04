@@ -108,7 +108,6 @@ namespace XDeploy.Client
         {
             foreach(var file in baseDir.Files)
             {
-                var bytes = await _api.DownloadFileAsync(application.ID, file.Name);
                 var dstFilePath = Path.Join(application.Location, file.Name);
                 if (File.Exists(dstFilePath))
                 {
@@ -116,6 +115,7 @@ namespace XDeploy.Client
                         continue; //Ignore already synced files; doesn't work for encrypted files because we delete them right away (maybe we shouldn't; or we should have a separate (cached) tree for them :/)
                     File.Delete(dstFilePath);
                 }
+                var bytes = await _api.DownloadFileAsync(application.ID, file.Name);
                 await File.WriteAllBytesAsync(dstFilePath, bytes);
                 if (application.Encrypted)
                 {
