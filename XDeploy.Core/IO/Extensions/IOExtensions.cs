@@ -20,5 +20,30 @@ namespace XDeploy.Core.IO.Extensions
                             $"Directories:{Environment.NewLine + '\t'}" +
                             $"{diffs.Where(x => x.Type == IODifference.ObjectType.Directory && x.DifferenceType == IODifference.IODifferenceType.Addition).Count()} new {Environment.NewLine + '\t'}" +
                             $"{diffs.Where(x => x.Type == IODifference.ObjectType.Directory && x.DifferenceType == IODifference.IODifferenceType.Removal).Count()} removed {Environment.NewLine}";
+
+        /// <summary>
+        /// Gets all subdirectories of this directory.
+        /// </summary>
+        public static IEnumerable<DirectoryInfo> GetAllSubdirectories(this DirectoryInfo directoryInfo)
+        {
+            var result = new List<DirectoryInfo>();
+            result.AddRange(directoryInfo.Subdirectories);
+            foreach(var dir in directoryInfo.Subdirectories)
+            {
+                result.AddRange(dir.GetAllSubdirectories());
+            }
+            return result;
+        }
+
+        public static IEnumerable<FileInfo> GetAllFiles(this DirectoryInfo directoryInfo)
+        {
+            var result = new List<FileInfo>();
+            result.AddRange(directoryInfo.Files);
+            foreach (var dir in directoryInfo.GetAllSubdirectories())
+            {
+                result.AddRange(dir.GetAllFiles());
+            }
+            return result;
+        }
     }
 }

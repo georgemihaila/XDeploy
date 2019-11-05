@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using XDeploy.Core.IO.Extensions;
 
 namespace XDeploy.Core.IO
 {
@@ -113,11 +114,59 @@ namespace XDeploy.Core.IO
             {
                 if (newInfo.Subdirectories.Count(y => y.Name == x.Name) == 1)
                     result.AddRange(Diffs(x, newInfo.Subdirectories.First(y => y.Name == x.Name), updateCheckType));
+                //Else, this is a removed directory
+                //It and all files and directories in it don't exist anymore
+                else
+                {
+                    result.Add(new IODifference() 
+                    {
+                        DifferenceType = IODifference.IODifferenceType.Removal,
+                        Path = x.FullPath,
+                        Type = IODifference.ObjectType.Directory
+                    });
+                    result.AddRange(x.GetAllSubdirectories().Select(x => new IODifference() 
+                    {
+                        DifferenceType = IODifference.IODifferenceType.Removal,
+                        Path = x.FullPath,
+                        Type = IODifference.ObjectType.Directory
+                    }));
+                    result.AddRange(x.GetAllFiles().Select(x => new IODifference() 
+                    {
+                        DifferenceType = IODifference.IODifferenceType.Removal,
+                        Path = x.Name,
+                        Type = IODifference.ObjectType.File,
+                        Checksum = x.SHA256CheckSum
+                    }));
+                }
             }
             foreach (var x in newInfo.Subdirectories)
             {
                 if (oldInfo.Subdirectories.Count(y => y.Name == x.Name) == 1)
                     result.AddRange(Diffs(x, oldInfo.Subdirectories.First(y => y.Name == x.Name), updateCheckType));
+                //Else, this is a new directory
+                //It and all files and directories in it are new
+                else
+                {
+                    result.Add(new IODifference()
+                    {
+                        DifferenceType = IODifference.IODifferenceType.Addition,
+                        Path = x.FullPath,
+                        Type = IODifference.ObjectType.Directory
+                    });
+                    result.AddRange(x.GetAllSubdirectories().Select(x => new IODifference()
+                    {
+                        DifferenceType = IODifference.IODifferenceType.Addition,
+                        Path = x.FullPath,
+                        Type = IODifference.ObjectType.Directory
+                    }));
+                    result.AddRange(x.GetAllFiles().Select(x => new IODifference()
+                    {
+                        DifferenceType = IODifference.IODifferenceType.Addition,
+                        Path = x.Name,
+                        Type = IODifference.ObjectType.File,
+                        Checksum = x.SHA256CheckSum
+                    }));
+                }
             }
             return result;
         }
