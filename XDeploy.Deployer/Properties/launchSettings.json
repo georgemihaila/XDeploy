@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "XDeploy.Deployer": {
+    "XDeploy.Client": {
       "commandName": "Project",
-      "commandLineArgs": "https://localhost:44353 admin@example.com pkjA3nzS2aLTa16YZuHhtVC2ogOIIIkO bnd6qHeUr9 C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug "
+      "commandLineArgs": "updater.json"
     }
   }
 }

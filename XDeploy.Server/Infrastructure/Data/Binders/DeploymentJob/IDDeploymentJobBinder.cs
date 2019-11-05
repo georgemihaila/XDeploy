@@ -45,7 +45,10 @@ namespace XDeploy.Server.Infrastructure.Data
             }
 
             var model = _context.DeploymentJobs.Find(value);
-            model.ExpectedFiles = _context.ExpectedFile.Where(x => x.ParentJob.ID == model.ID).ToList();
+            if (model != null)
+            {
+                model.ExpectedFiles = _context.ExpectedFile.Where(x => x.ParentJob.ID == model.ID).ToList();
+            }
             bindingContext.Result = ModelBindingResult.Success(model);
             return Task.CompletedTask;
         }

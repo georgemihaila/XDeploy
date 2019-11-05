@@ -27,5 +27,15 @@ namespace XDeploy.Core.IO
         /// Gets or sets the difference type.
         /// </summary>
         public IODifferenceType DifferenceType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the checksum, in case the current object represents a file.
+        /// </summary>
+        public string Checksum { get; set; }
+
+        /// <summary>
+        /// Converts to string.
+        /// </summary>
+        public override string ToString() => $"{Type} {DifferenceType}";
     }
 }

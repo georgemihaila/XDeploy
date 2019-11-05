@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Buffers;
@@ -33,14 +34,7 @@ namespace XDeploy.Server.Controllers
         /// <para>Headers: ["Authorization": "Basic [...]"]</para>
         /// </summary>
         [HttpPost]
-        public IActionResult ValidateCredentials()
-        {
-            if (ValidateCredentials(Request))
-            {
-                return Ok();
-            }
-            return Unauthorized();
-        }
+        public IActionResult ValidateCredentials() => Content(JsonConvert.SerializeObject(ValidateCredentials(Request)));
 
         /// <summary>
         /// <para>Lists a user's applications.</para>
@@ -142,9 +136,16 @@ namespace XDeploy.Server.Controllers
                 {
                     return BadRequest("Deployment job doesn't match application.");
                 }
-                _context.ExpectedFile.RemoveRange(_context.ExpectedFile.Where(x => x.ParentJob.ID == deploymentJob.ID));
-                _context.DeploymentJobs.Remove(_context.DeploymentJobs.First(x => x.ID == deploymentJob.ID));
-                _context.SaveChanges();
+                try
+                {
+                    _context.ExpectedFile.RemoveRange(_context.ExpectedFile.Where(x => x.ParentJob.ID == deploymentJob.ID));
+                    _context.DeploymentJobs.Remove(_context.DeploymentJobs.First(x => x.ID == deploymentJob.ID));
+                    _context.SaveChanges();
+                }
+                catch //To do something with this
+                {
+
+                }
                 StaticWebSocketsWorkaround.TriggerUpdate(application.ID);
                 return Created(new Uri("api/DeleteDeploymentJob", UriKind.Relative), deploymentJob.ID);
             }
@@ -152,7 +153,7 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateDeploymentJob([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<FutureUploadedFileInfo> expected)
+        public IActionResult CreateDeploymentJob([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<ExpectedFileInfo> expected)
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
@@ -198,10 +199,12 @@ namespace XDeploy.Server.Controllers
                 {
                     return BadRequest("Deployment job doesn't match application.");
                 }
+                /* //Is weird
                 if (!deploymentJob.ExpectedFiles.Any(x => x.Checksum == checksum && x.Filename == location))
                 {
                     return BadRequest("Unexpected file.");
                 }
+                */
                 var path = Path.Combine(_cachedFilesPath, application.ID);
                 var fileManager = new FileManager(path);
                 if (fileManager.HasFile(location, checksum))

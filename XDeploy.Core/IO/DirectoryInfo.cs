@@ -56,6 +56,9 @@ namespace XDeploy.Core.IO
         /// </summary>
         public IList<FileInfo> Files { get; set; }
 
+        /// <summary>
+        /// Relativizes this directory.
+        /// </summary>
         public void Relativize(string fullPath)
         {
             FullPath = FullPath.Replace(fullPath, string.Empty);

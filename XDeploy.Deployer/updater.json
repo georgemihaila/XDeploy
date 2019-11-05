@@ -1,4 +1,5 @@
 ﻿{
+  "Mode":"Updater",
   "Endpoint": "https://localhost:44353",
   "Email": "admin@example.com",
   "APIKey": "pkjA3nzS2aLTa16YZuHhtVC2ogOIIIkO",
@@ -6,12 +7,12 @@
   "Apps": [
     {
       "ID": "bnd6qHeUr9",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\ReassignerWPF\\bin\\Debug",
+      "Location": "C:\\Users\\gmihaila\\source\\repos\\RemoteDeploy\\XDeploy.Deployer\\bin\\Debug\\netcoreapp3.0\\target\\1",
       "EncryptionKey": "3fc9b689459d738f8c88a3a48aa9e33542016b7a4052e001aaa536fca74813cb7dd530c4d36da47cd33396718ef1fa1e8c0f7d91ee551d7fdc1c73aa65edb454"
     },
     {
       "ID": "Ldjef2oALk",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\Reassigner\\bin\\Release\\netcoreapp2.1",
+      "Location": "C:\\Users\\gmihaila\\source\\repos\\RemoteDeploy\\XDeploy.Deployer\\bin\\Debug\\netcoreapp3.0\\target\\2",
       "EncryptionKey": "3fc9b689459d738f8c88a3a48aa9e33542016b7a4052e001aaa536fca74813cb7dd530c4d36da47cd33396718ef1fa1e8c0f7d91ee551d7fdc1c73aa65edb454"
     }
   ],

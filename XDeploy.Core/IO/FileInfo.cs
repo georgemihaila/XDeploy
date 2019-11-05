@@ -43,7 +43,7 @@ namespace XDeploy.Core.IO
         public DateTime LastModified { get; set; }
 
         /// <summary>
-        /// Relativizes the current object
+        /// Relativizes this file.
         /// </summary>
         public void Relativize(string absolute)
         {

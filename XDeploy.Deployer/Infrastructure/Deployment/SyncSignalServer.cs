@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Text;
 using NHttp;
 
-namespace XDeploy.Deployer
+namespace XDeploy.Client.Infrastructure
 {
     /// <summary>
     /// Represents an Http server which listens for incoming application synchronization requests.
     /// </summary>
-    public class SyncSignalServer
+    internal class SyncSignalServer : ISyncSignalNotifier
     {
         private readonly HttpServer _server;
 
@@ -22,7 +22,7 @@ namespace XDeploy.Deployer
         /// </summary>
         public SyncSignalServer(int port)
         {
-            _server = new NHttp.HttpServer()
+            _server = new HttpServer()
             {
                 EndPoint = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }), port)
             };
@@ -37,24 +37,23 @@ namespace XDeploy.Deployer
         }
 
         /// <summary>
+        /// Gets a value indicating whether this <see cref="SyncSignalServer"/> is listening.
+        /// </summary>
+        public bool Listening => _server.State == HttpServerState.Started;
+
+        /// <summary>
         /// Occurs when the server receives a correct synchronization signal.
         /// </summary>
         public event EventHandler<string> SyncSignalReceived;
 
         /// <summary>
-        /// Starts the server.
+        /// Starts listening.
         /// </summary>
-        public void Start()
-        {
-            _server.Start();
-        }
+        public void StartListening() => _server.Start();
 
         /// <summary>
-        /// Stops the server.
+        /// Stops listening.
         /// </summary>
-        public void Stop()
-        {
-            _server.Stop();
-        }
+        public void StopListening() => _server.Stop();
     }
 }

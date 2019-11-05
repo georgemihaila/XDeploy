@@ -30,12 +30,30 @@ namespace XDeploy.Core.IO
                 throw new ArgumentNullException(nameof(path));
 
             BaseDirectory = new DirectoryInfo(path);
+
+            AllFiles = new List<FileInfo>();
+            AddToAllFiles(BaseDirectory);
+        }
+
+        private void AddToAllFiles(DirectoryInfo directory)
+        {
+            AllFiles.AddRange(directory.Files);
+            foreach(var dir in directory.Subdirectories)
+            {
+                AddToAllFiles(dir);
+            }
         }
 
         /// <summary>
         /// Gets or sets the base directory.
         /// </summary>
         public DirectoryInfo BaseDirectory { get; set; }
+
+
+        /// <summary>
+        /// Gets all the files in the tree.
+        /// </summary>
+        public List<FileInfo> AllFiles { get; private set; }
 
         /// <summary>
         /// Calculates the differences between this tree and a different one.
@@ -72,21 +90,24 @@ namespace XDeploy.Core.IO
             {
                 DifferenceType = IODifference.IODifferenceType.Removal,
                 Path = Path.Join(x.Name),
-                Type = IODifference.ObjectType.File
+                Type = IODifference.ObjectType.File,
+                Checksum = x.SHA256CheckSum
             }));
             //Added files
             result.AddRange(newInfo.Files.Where(newFile => !oldInfo.Files.Any(x => x.Name == newFile.Name)).Select(x => new IODifference()
             {
                 DifferenceType = IODifference.IODifferenceType.Addition,
                 Path = Path.Join(x.Name),
-                Type = IODifference.ObjectType.File
+                Type = IODifference.ObjectType.File,
+                Checksum = x.SHA256CheckSum
             }));
             //Updated files
             result.AddRange(oldInfo.Files.Where(oldFile => newInfo.Files.Any(x => x.Name == oldFile.Name && ((updateCheckType == FileUpdateCheckType.Checksum) ? x.SHA256CheckSum != oldFile.SHA256CheckSum : x.LastModified != oldFile.LastModified))).Select(x => new IODifference()
             {
                 DifferenceType = IODifference.IODifferenceType.Update,
                 Path = Path.Join(x.Name),
-                Type = IODifference.ObjectType.File
+                Type = IODifference.ObjectType.File,
+                Checksum = x.SHA256CheckSum
             }));
             foreach (var x in oldInfo.Subdirectories)
             {
@@ -101,6 +122,9 @@ namespace XDeploy.Core.IO
             return result;
         }
 
+        /// <summary>
+        /// Relativizes the current tree.
+        /// </summary>
         public void Relativize()
         {
             BaseDirectory.Relativize(BaseDirectory.FullPath);

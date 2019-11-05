@@ -7,17 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="config.json" />
+    <None Remove="deployer.json" />
+    <None Remove="updater.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="config.json">
+    <Content Include="deployer.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="updater.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NHttp" Version="0.1.9" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0-preview2.19523.17" />
   </ItemGroup>
 

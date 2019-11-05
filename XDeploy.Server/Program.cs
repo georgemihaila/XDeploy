@@ -20,7 +20,12 @@ namespace XDeploy.Server
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseStartup<Startup>();
+                    webBuilder.UseStartup<Startup>()
+#if !DEBUG
+                    .UseKestrel()
+                    .UseIISIntegration()
+#endif
+                    ;
                 });
     }
 }

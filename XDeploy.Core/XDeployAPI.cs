@@ -7,7 +7,6 @@ using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 using XDeploy.Core.IO;
-using WebSocketSharp;
 using System.Linq;
 
 namespace XDeploy.Core
@@ -20,41 +19,107 @@ namespace XDeploy.Core
         private readonly string _endpoint;
         private readonly string _authHeaderValue;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XDeployAPI"/> class.
+        /// </summary>
+        public XDeployAPI(StartupConfig config)
+        {
+            _authHeaderValue = "Basic " + Cryptography.Base64Encode(string.Join(':', config.Email, config.APIKey));
+            _endpoint = config.Endpoint + "/api";
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XDeployAPI"/> class.
+        /// </summary>
+        /// <param name="endpoint">The endpoint address.</param>
+        /// <param name="email">The email.</param>
+        /// <param name="apiKey">The API key.</param>
         public XDeployAPI(string endpoint, string email, string apiKey)
         {
             _authHeaderValue = "Basic " + Cryptography.Base64Encode(string.Join(':', email, apiKey));
             _endpoint = endpoint + "/api";
         }
 
+        /// <summary>
+        /// Returns a result indicating whether a user's credentials are valid.
+        /// </summary>
+        public async Task<bool> ValidateCredentialsAsync() => await POSTRequestAsync<bool>("/ValidateCredentials");
 
-        public async Task<bool> ValidateCredentialsAsync() => await POSTRequestAsync("/ValidateCredentials");
+        /// <summary>
+        /// Gets an application's details.
+        /// </summary>
+        public async Task<string> GetAppDetailsAsync(ApplicationInfo app) => await GetAppDetailsAsync(app.ID);
 
-        public async Task<string> GetAppDetailsAsync(string id) => await GETRequestAsync("/App?id=" + id);
+        /// <summary>
+        /// Gets an application's details.
+        /// </summary>
+        public async Task<string> GetAppDetailsAsync(string appID) => await GETRequestAsync("/App?id=" + appID);
 
-        public async Task<int> CreateDeploymentJobAsync(string id, IEnumerable<FutureUploadedFileInfo> expected) => await POSTRequestAsync<int>("/CreateDeploymentJob?id=" + id, expected);
+        /// <summary>
+        /// Attempts to create a deployment job based on an expected file list and returns the job ID, in case the request is successful.
+        /// </summary>
+        public async Task<int> CreateDeploymentJobAsync(ApplicationInfo app, IEnumerable<ExpectedFileInfo> expected) => await CreateDeploymentJobAsync(app.ID, expected);
 
-        public async Task DeleteDeploymentJobAsync(string id, int jobid) => await POSTSimpleAsync("/DeleteDeploymentJob?id=" + id + "&jobid=" + jobid);
+        /// <summary>
+        /// Attempts to create a deployment job based on an expected file list and returns the job ID, in case the request is successful.
+        /// </summary>
+        public async Task<int> CreateDeploymentJobAsync(string appID, IEnumerable<ExpectedFileInfo> expected) => await POSTRequestAsync<int>("/CreateDeploymentJob?id=" + appID, expected);
 
-        public async Task<string> UploadFileIfNotExistsAsync(string id, string baseDirectory, string fullFilePath, int jobid)
+        /// <summary>
+        /// Attempts to delete a deployment job based on its ID.
+        /// </summary>
+        public async Task DeleteDeploymentJobAsync(ApplicationInfo app, int jobid) => await DeleteDeploymentJobAsync(app.ID, jobid);
+
+        /// <summary>
+        /// Attempts to delete a deployment job based on its ID.
+        /// </summary>
+        public async Task DeleteDeploymentJobAsync(string appID, int jobid) => await POSTSimpleAsync("/DeleteDeploymentJob?id=" + appID + "&jobid=" + jobid);
+
+        /// <summary>
+        /// Checks if the server already has a specific file and in case it does not, it uploads it.
+        /// </summary>
+        public async Task<string> UploadFileIfNotExistsAsync(ApplicationInfo app, int jobid, string relativeLocation, string checksum, byte[] fileBytes)
+        {
+            var contentLocation = relativeLocation.Replace("%5C", "\\").TrimStart('\\');
+            if (!await HasFileAsync(app.ID, contentLocation, checksum))
+            {
+                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + app.ID + "&jobid=" + jobid);
+                request2.Method = "POST";
+                request2.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+                request2.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
+                request2.Headers["X-SHA256"] = checksum;
+                //request2.Headers[Httprequest2Header.ContentLength] = bytes.Length.ToString();
+                using (var stream = await request2.GetRequestStreamAsync())
+                {
+                    stream.Write(fileBytes, 0, fileBytes.Length);
+                    stream.Close();
+                }
+                using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+            else
+            {
+                return "Exists";
+            }
+        }
+
+        /// <summary>
+        /// Checks if the server already has a specific file and in case it does not, it uploads it.
+        /// </summary>
+        public async Task<string> UploadFileIfNotExistsAsync(ApplicationInfo app, int jobid, string fullFilePath) => await UploadFileIfNotExistsAsync(app.ID, jobid, app.Location, fullFilePath);
+
+        /// <summary>
+        /// Checks if the server already has a specific file and in case it does not, it uploads it.
+        /// </summary>
+        public async Task<string> UploadFileIfNotExistsAsync(string appID, int jobid, string baseDirectory, string fullFilePath)
         {
             var contentLocation = fullFilePath.Replace(baseDirectory, string.Empty).Replace("%5C", "\\").TrimStart('\\');
             var checksum = Cryptography.SHA256CheckSum(fullFilePath);
-
-            //Check if file already exists
-            var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/HasFile?id=" + id);
-            request.Method = "GET";
-            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
-            request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
-            request.Headers["X-SHA256"] = checksum;
-            var response = (HttpWebResponse)await request.GetResponseAsync();
-            bool exists = false;
-            using (var reader = new StreamReader(response.GetResponseStream()))
+            if (!await HasFileAsync(appID, contentLocation, checksum))
             {
-                exists = JsonConvert.DeserializeObject<bool>(reader.ReadToEnd());
-            }
-            if (!exists)
-            {
-                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + id + "&jobid=" + jobid);
+                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + appID + "&jobid=" + jobid);
                 request2.Method = "POST";
                 request2.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
                 request2.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
@@ -66,18 +131,9 @@ namespace XDeploy.Core
                     stream.Write(bytes, 0, bytes.Length);
                     stream.Close();
                 }
-
-                try
+                using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
                 {
-                    using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
-                    {
-                        return reader.ReadToEnd();
-                    }
-                }
-                catch 
-                {
-                    
-                    return "Error";
+                    return reader.ReadToEnd();
                 }
             }
             else
@@ -86,26 +142,43 @@ namespace XDeploy.Core
             }
         }
 
-        public void SubscribeToUpdateWebSockets(string id)
+        private async Task<bool> HasFileAsync(string appID, string relativeLocation, string checksum)
         {
-            var ws = new WebSocket(string.Format("{0}/ws?authString={1}&id={2}", _endpoint.Replace("https://", "wss://"), _authHeaderValue.Replace("Basic ", string.Empty), id));
-            ws.SslConfiguration.CheckCertificateRevocation = false;
-            ws.OnMessage += (sender, e) =>
+            var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/HasFile?id=" + appID);
+            request.Method = "GET";
+            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            request.Headers[HttpRequestHeader.ContentLocation] = relativeLocation;
+            request.Headers["X-SHA256"] = checksum;
+            var response = (HttpWebResponse)await request.GetResponseAsync();
+            using (var reader = new StreamReader(response.GetResponseStream()))
             {
-                ApplicationUpdate?.Invoke(this, ((dynamic)JsonConvert.DeserializeObject(e.Data)).id.ToString());
-            };
-            ws.Connect();
+                return JsonConvert.DeserializeObject<bool>(reader.ReadToEnd());
+            }
         }
-
-        public event EventHandler<string> ApplicationUpdate;
 
         private async Task<T> GETAsync<T>(string path) => JsonConvert.DeserializeObject<T>(await GETRequestAsync(path));
 
-        public async Task<Tree> GetRemoteTreeAsync(string id) => JsonConvert.DeserializeObject<Tree>(await GETRequestAsync("/RemoteTree?id=" + id));
+        /// <summary>
+        /// Gets the remote tree of an application.
+        /// </summary>
+        public async Task<Tree> GetRemoteTreeAsync(ApplicationInfo app) => await GetRemoteTreeAsync(app.ID);
 
-        public async Task<byte[]> DownloadFileAsync(string id, string relativePath)
+        /// <summary>
+        /// Gets the remote tree of an application.
+        /// </summary>
+        public async Task<Tree> GetRemoteTreeAsync(string appID) => JsonConvert.DeserializeObject<Tree>(await GETRequestAsync("/RemoteTree?id=" + appID));
+
+        /// <summary>
+        /// Downloads an application file's bytes.
+        /// </summary>
+        public async Task<byte[]> DownloadFileBytesAsync(ApplicationInfo app, string relativePath) => await DownloadFileBytesAsync(app.ID, relativePath);
+
+        /// <summary>
+        /// Downloads an application file's bytes.
+        /// </summary>
+        public async Task<byte[]> DownloadFileBytesAsync(string appID, string relativePath)
         {
-            var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/DownloadFile?id=" + id);
+            var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/DownloadFile?id=" + appID);
             request.Method = "GET";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentLocation] = relativePath;
@@ -136,28 +209,20 @@ namespace XDeploy.Core
             var response = (HttpWebResponse)await request.GetResponseAsync();
         }
 
-        private async Task<bool> POSTRequestAsync(string path)
-        {
-            var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
-            request.Method = "POST";
-            request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
-            var response = (HttpWebResponse)await request.GetResponseAsync();
-            if (response.StatusCode == HttpStatusCode.OK)
-                return true;
-
-            return false;
-        }
-        private async Task<T> POSTRequestAsync<T>(string path, object content)
+        private async Task<T> POSTRequestAsync<T>(string path, object content = null)
         {
             var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
             request.Method = "POST";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentType] = "application/json";
-            using (var stream = await request.GetRequestStreamAsync())
+            if (content != null)
             {
-                var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(content));
-                stream.Write(bytes, 0, bytes.Length);
-                stream.Close();
+                using (var stream = await request.GetRequestStreamAsync())
+                {
+                    var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(content));
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Close();
+                }
             }
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new StreamReader(response.GetResponseStream()))

@@ -39,9 +39,15 @@ namespace XDeploy.Core.IO
         /// <summary>
         /// Opens a binary file, reads the contents of the file into a byte array, and then closes the file.
         /// </summary>
-        public byte[] GetFileBytes(string relativePath)
+        public byte[] GetFileBytes(string relativePath) => File.ReadAllBytes(Path.Join(_baseLocation, relativePath));
+
+        /// <summary>
+        /// Gets the a file's checksum and bytes.
+        /// </summary>
+        public (string Checksum, byte[] Bytes) GetFileChecksumAndBytes(string relativePath)
         {
-            return System.IO.File.ReadAllBytes(Path.Join(_baseLocation, relativePath));
+            var path = Path.Join(_baseLocation, relativePath);
+            return (Cryptography.SHA256CheckSum(path), File.ReadAllBytes(path));
         }
 
         public void WriteFile(string relativePath, Stream stream, int length)
