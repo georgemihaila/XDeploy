@@ -70,6 +70,7 @@ namespace XDeploy.Client.Infrastructure
                 ws.Connect();
                 _appWs[i] = (_appWs[i].ID, ws);
             }
+            Console.WriteLine("Waiting for updates...");
         }
 
         /// <summary>

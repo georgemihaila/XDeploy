@@ -22,7 +22,10 @@ namespace XDeploy.Client.Infrastructure
         protected const string NL = "\r\n";
         protected const string NLT = "\r\n\t";
 
-        protected bool _initial;
+        /// <summary>
+        /// Chunk size for processing multiple files at once.
+        /// </summary>
+        protected const int FILES_CHUNK_SIZE = 4;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationSynchronizerBase"/> class.
@@ -46,7 +49,6 @@ namespace XDeploy.Client.Infrastructure
 
             _localTree = new Tree(_app.Location);
             _localTree.Relativize(); //Such that differences are computed correctly
-            _initial = true;
             _fileManager = new FileManager(app.Location);
         }
 
@@ -59,5 +61,14 @@ namespace XDeploy.Client.Infrastructure
         /// Checks for local file changes, compares their versions to the ones on the server and synchronizes them if required.
         /// </summary>
         public abstract Task<SynchronizationResult> SynchronizeAsync();
+
+        /// <summary>
+        /// <para>Logs a message to the console.</para>
+        /// <para>The message is preceeded by the current time and the application ID.</para>
+        /// </summary>
+        protected void LogToConsole(string message)
+        {
+            Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {ApplicationID} - {message}");
+        }
     }
 }

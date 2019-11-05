@@ -20,6 +20,7 @@ namespace XDeploy.Client
             manager.StartListening();
             Console.CancelKeyPress += (_, __) =>
             {
+                Console.WriteLine("Terminating app...");
                 manager.StopListening();
             };
             while (true)

@@ -39,8 +39,7 @@ namespace XDeploy.Client.Infrastructure
                 Func<T, bool> idSelector = x => x.ApplicationID == id;
                 if (_applicationSynchronizers.Any(idSelector))
                 {
-                    var result = await _applicationSynchronizers.First(idSelector).SynchronizeAsync();
-                    Console.WriteLine(result);
+                    _ = await _applicationSynchronizers.First(idSelector).SynchronizeAsync();
                 }
             };
         }
@@ -53,7 +52,11 @@ namespace XDeploy.Client.Infrastructure
             var result = new SynchronizationResult();
             foreach (var deployer in _applicationSynchronizers)
             {
-                result += await deployer.SynchronizeAsync();
+                var res = await deployer.SynchronizeAsync();
+                if (res != null)
+                {
+                    result += res;
+                }
             }
             return result;
         }

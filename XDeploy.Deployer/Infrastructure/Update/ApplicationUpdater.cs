@@ -25,9 +25,13 @@ namespace XDeploy.Client.Infrastructure
         /// <summary>
         /// Checks for local file changes, compares their versions to the ones on the server and synchronizes them if required.
         /// </summary>
-        public override Task<SynchronizationResult> SynchronizeAsync()
+        public override async Task<SynchronizationResult> SynchronizeAsync()
         {
-            throw new NotImplementedException();
+            var result = new SynchronizationResult();
+            LogToConsole("Update started");
+
+            LogToConsole("Update completed");
+            return result;
         }
     }
 }

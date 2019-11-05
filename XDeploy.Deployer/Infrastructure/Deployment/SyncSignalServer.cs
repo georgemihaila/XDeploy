@@ -47,7 +47,11 @@ namespace XDeploy.Client.Infrastructure
         /// <summary>
         /// Starts listening.
         /// </summary>
-        public void StartListening() => _server.Start();
+        public void StartListening()
+        {
+            _server.Start();
+            Console.WriteLine($"Synchronize an app by making a request to http://{_server.EndPoint.Address.MapToIPv4()}:{Port}?id=appID");
+        }
 
         /// <summary>
         /// Stops listening.
