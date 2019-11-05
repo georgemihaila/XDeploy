@@ -76,6 +76,16 @@ namespace XDeploy.Core
         public async Task DeleteDeploymentJobAsync(string appID, int jobid) => await POSTSimpleAsync("/DeleteDeploymentJob?id=" + appID + "&jobid=" + jobid);
 
         /// <summary>
+        /// Uses a list of <see cref="IODifference"/>s to clear files and folders that may have been removed locally.
+        /// </summary>
+        public async Task DoCleanupAsync(ApplicationInfo app, IEnumerable<IODifference> differences) => await DoCleanupAsync(app.ID, differences);
+
+        /// <summary>
+        /// Uses a list of <see cref="IODifference"/>s to clear files and folders that may have been removed locally.
+        /// </summary>
+        public async Task DoCleanupAsync(string appID, IEnumerable<IODifference> differences) => await POSTRequestAsync<string>("/Cleanup?id=" + appID, differences);
+
+        /// <summary>
         /// Checks if the server already has a specific file and in case it does not, it uploads it.
         /// </summary>
         public async Task<string> UploadFileIfNotExistsAsync(ApplicationInfo app, int jobid, string relativeLocation, string checksum, byte[] fileBytes)

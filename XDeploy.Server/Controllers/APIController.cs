@@ -97,6 +97,36 @@ namespace XDeploy.Server.Controllers
             return Unauthorized();
         }
 
+        [HttpPost]
+        public IActionResult Cleanup([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<IODifference> differences)
+        {
+            if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
+            {
+                foreach (var removal in differences.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal).ToList())
+                {
+                    removal.Path = removal.Path.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
+                    var path = Path.Join(_cachedFilesPath, application.ID, removal.Path);
+                    switch (removal.Type) //TODO: Here, we should also remove corresponding files and directories from the removal list so we don't end up with too many unnecessary operations
+                    {
+                        case IODifference.ObjectType.Directory:
+                            if (Directory.Exists(path))
+                            {
+                                Directory.Delete(path, true);
+                            }
+                            break;
+                        case IODifference.ObjectType.File:
+                            if (System.IO.File.Exists(path))
+                            {
+                                System.IO.File.Delete(path);
+                            }
+                            break;
+                    }
+                }
+                return Ok();
+            }
+            return Unauthorized();
+        }
+
         [HttpGet]
         public IActionResult DownloadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location)
         {
