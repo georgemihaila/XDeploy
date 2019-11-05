@@ -25,76 +25,11 @@ namespace XDeploy.Client.Infrastructure
         }
 
         /// <summary>
-        /// Does a force synchronization.
+        /// Checks for local file changes, compares their versions to the ones on the server and synchronizes them if required.
         /// </summary>
-        protected override async Task<SynchronizationResult> ForceSyncAsync()
+        public override Task<SynchronizationResult> SynchronizeAsync()
         {
-            var result = new SynchronizationResult();
-            //Force push everything
-            var expectedFiles = _localTree.AllFiles.Select(x => new ExpectedFileInfo()
-            {
-                Filename = x.Name,
-                Checksum = Cryptography.SHA256CheckSum(Path.Join(_app.Location, x.Name))
-            });
-            var jobid = await _api.CreateDeploymentJobAsync(_app, expectedFiles);
-            foreach (var file in expectedFiles)
-            {
-                try
-                {
-                    var dFile = _fileManager.GetFileChecksumAndBytes(file.Filename);
-                    var res = await _api.UploadFileIfNotExistsAsync(_app, jobid, file.Filename, dFile.Checksum, dFile.Bytes);
-                    if (res != "Exists")
-                    {
-                        result.NewFiles++;
-                    }
-                }
-                catch
-                {
-                    Console.WriteLine($"Error uploading file {file.Filename}");
-                }
-            }
-            //Clear job
-            await _api.DeleteDeploymentJobAsync(_app, jobid);
-            return result;
-        }
-
-        /// <summary>
-        /// Does a normal synchronization.
-        /// </summary>
-        protected async override Task<SynchronizationResult> NormalSyncAsync()
-        {
-            var result = new SynchronizationResult();
-
-            var newTree = new Tree(_app.Location);
-            newTree.Relativize();
-            var localDiffs = newTree.Diff(_localTree, Tree.FileUpdateCheckType.Checksum);
-            var expectedFiles = localDiffs.Where(x => x.Type == IODifference.ObjectType.File && (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update)).Select(x => new ExpectedFileInfo()
-            {
-                Filename = x.Path,
-                Checksum = x.Checksum
-            });
-            var jobid = await _api.CreateDeploymentJobAsync(_app, expectedFiles);
-            foreach (var file in expectedFiles)
-            {
-                try
-                {
-                    var dFile = _fileManager.GetFileChecksumAndBytes(file.Filename);
-                    var res = await _api.UploadFileIfNotExistsAsync(_app, jobid, file.Filename, dFile.Checksum, dFile.Bytes);
-                    if (res != "Exists")
-                    {
-                        result.NewFiles++;
-                    }
-                }
-                catch
-                {
-                    Console.WriteLine($"Error uploading file {file.Filename}");
-                }
-            }
-            //Clear job
-            await _api.DeleteDeploymentJobAsync(_app, jobid);
-            _localTree = newTree;
-
-            return result;
+            throw new NotImplementedException();
         }
     }
 }

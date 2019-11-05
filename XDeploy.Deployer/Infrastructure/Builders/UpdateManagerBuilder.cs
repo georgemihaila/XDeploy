@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using XDeploy.Core;
 using XDeploy.Core.Exceptions;
@@ -39,18 +39,21 @@ namespace XDeploy.Client.Infrastructure.Builders
             await ValidateAPIAsync(api);
             var apps = await GetApplicationDetailsAsync(api, _config.Apps);
             ISyncSignalNotifier notifier;
+            IEnumerable<IApplicationSynchronizer> synchronizers;
             switch (_config.Mode)
             {
                 case ApplicationMode.Deployer:
                     notifier = new SyncSignalServer(_config.SyncServerPort);
-                    return new DeploymentManager(api, apps, notifier);
+                    synchronizers = apps.Select(x => new ApplicationDeployer(api, x));
+                    break;
                 case ApplicationMode.Updater:
                     notifier = new WebSocketsSignalNotifier(apps, _config.Endpoint, _config.Email, _config.APIKey);
-                    return new UpdateManager(api, apps, notifier);
+                    synchronizers = apps.Select(x => new ApplicationUpdater(api, x));
+                    break;
                 default:
                     throw new NotImplementedException($"Mode {_config.Mode} is not supported.");
             }
-            
+            return new UpdateManager<IApplicationSynchronizer>(api, notifier, synchronizers);
         }
 
         /// <summary>

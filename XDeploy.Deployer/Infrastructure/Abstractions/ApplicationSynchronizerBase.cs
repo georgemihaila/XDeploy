@@ -58,34 +58,6 @@ namespace XDeploy.Client.Infrastructure
         /// <summary>
         /// Checks for local file changes, compares their versions to the ones on the server and synchronizes them if required.
         /// </summary>
-        public async Task<SynchronizationResult> SynchronizeAsync()
-        {
-            var result = new SynchronizationResult();
-            Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {ApplicationID} - Sync started");
-
-            if (_initial)
-            {
-                result = await ForceSyncAsync();
-                _initial = true;
-            }
-            else
-            {
-                result = await NormalSyncAsync();
-            }
-
-            Console.WriteLine($"{DateTime.Now.ToString(TimeFormat)} - {ApplicationID} - Sync completed");
-            return result;
-        }
-
-        /// <summary>
-        /// Does a force synchronization.
-        /// </summary>
-        protected abstract Task<SynchronizationResult> ForceSyncAsync();
-
-
-        /// <summary>
-        /// Does a normal synchronization.
-        /// </summary>
-        protected abstract Task<SynchronizationResult> NormalSyncAsync();
+        public abstract Task<SynchronizationResult> SynchronizeAsync();
     }
 }

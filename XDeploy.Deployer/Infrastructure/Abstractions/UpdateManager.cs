@@ -10,32 +10,36 @@ namespace XDeploy.Client.Infrastructure
     /// <summary>
     /// Represents a base class for an update manager.
     /// </summary>
-    public abstract class UpdateManagerBase : IUpdateManager
+    public class UpdateManager<T> : IUpdateManager
+        where T: IApplicationSynchronizer
     {
         protected readonly XDeployAPI _api;
         protected readonly ISyncSignalNotifier _notifier;
-        protected IEnumerable<IApplicationSynchronizer> _synchronizers;
+        protected IEnumerable<T> _applicationSynchronizers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UpdateManagerBase"/> class.
         /// </summary>
         /// <param name="api">The API.</param>
         /// <exception cref="ArgumentNullException">api</exception>
-        protected UpdateManagerBase(XDeployAPI api, ISyncSignalNotifier signalNotifier)
+        public UpdateManager(XDeployAPI api, ISyncSignalNotifier signalNotifier, IEnumerable<T> applicationSynchronizers)
         {
             if (api is null)
                 throw new ArgumentNullException(nameof(api));
             if (signalNotifier is null)
                 throw new ArgumentNullException(nameof(signalNotifier));
+            if (applicationSynchronizers is null)
+                throw new ArgumentNullException(nameof(applicationSynchronizers));
 
             _api = api;
             _notifier = signalNotifier;
+            _applicationSynchronizers = applicationSynchronizers;
             _notifier.SyncSignalReceived += async (_, id) =>
             {
-                Func<IApplicationSynchronizer, bool> idSelector = x => x.ApplicationID == id;
-                if (_synchronizers.Any(idSelector))
+                Func<T, bool> idSelector = x => x.ApplicationID == id;
+                if (_applicationSynchronizers.Any(idSelector))
                 {
-                    var result = await _synchronizers.First(idSelector).SynchronizeAsync();
+                    var result = await _applicationSynchronizers.First(idSelector).SynchronizeAsync();
                     Console.WriteLine(result);
                 }
             };
@@ -44,23 +48,24 @@ namespace XDeploy.Client.Infrastructure
         /// <summary>
         /// Does the initial synchronization for all registered applications.
         /// </summary>
-        public async Task DoInitialSyncAsync()
+        public async Task<SynchronizationResult> SynchronizeAsync()
         {
-            foreach (var deployer in _synchronizers)
+            var result = new SynchronizationResult();
+            foreach (var deployer in _applicationSynchronizers)
             {
-                var result = await deployer.SynchronizeAsync();
-                Console.WriteLine(result);
+                result += await deployer.SynchronizeAsync();
             }
+            return result;
         }
 
         /// <summary>
         /// Starts the listener.
         /// </summary>
-        public void StartListener() => _notifier.StartListening();
+        public void StartListening() => _notifier.StartListening();
 
         /// <summary>
         /// Stops the listener.
         /// </summary>
-        public void StopListener() => _notifier.StopListening();
+        public void StopListening() => _notifier.StopListening();
     }
 }

@@ -50,9 +50,13 @@ namespace XDeploy.Server.Controllers
                     });
                     while (webSocket.State == WebSocketState.Open)
                     {
+                        if (webSocket.State == WebSocketState.CloseReceived)
+                        {
+                            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection terminated.", CancellationToken.None);
+                        }
                         await Task.Delay(1000);
                     }
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection terminated.", CancellationToken.None);
+                    
                 });
             }
             else

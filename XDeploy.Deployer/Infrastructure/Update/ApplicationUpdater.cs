@@ -23,19 +23,11 @@ namespace XDeploy.Client.Infrastructure
         }
 
         /// <summary>
-        /// Does a normal synchronization.
+        /// Checks for local file changes, compares their versions to the ones on the server and synchronizes them if required.
         /// </summary>
-        protected override async Task<SynchronizationResult> NormalSyncAsync()
+        public override Task<SynchronizationResult> SynchronizeAsync()
         {
-            return new SynchronizationResult();
-        }
-
-        /// <summary>
-        /// Does a force synchronization.
-        /// </summary>
-        protected override async Task<SynchronizationResult> ForceSyncAsync()
-        {
-            return new SynchronizationResult();
+            throw new NotImplementedException();
         }
     }
 }

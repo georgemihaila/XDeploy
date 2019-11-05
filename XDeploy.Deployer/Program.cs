@@ -16,11 +16,11 @@ namespace XDeploy.Client
             }
             var config = StartupConfig.FromJsonFile(args[0]);
             var manager = await (new UpdateManagerBuilder(config)).BuildAsync();
-            await manager.DoInitialSyncAsync();
-            manager.StartListener();
+            await manager.SynchronizeAsync();
+            manager.StartListening();
             Console.CancelKeyPress += (_, __) =>
             {
-                manager.StopListener();
+                manager.StopListening();
             };
             while (true)
             {

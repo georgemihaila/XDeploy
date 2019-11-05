@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace XDeploy.Client.Infrastructure
+﻿namespace XDeploy.Client.Infrastructure
 {
     /// <summary>
     /// Represents an application synchronization result.
@@ -22,6 +18,14 @@ namespace XDeploy.Client.Infrastructure
         /// </summary>
         public int NewFiles { get; set; }
 
+        public static SynchronizationResult operator +(SynchronizationResult a, SynchronizationResult b) => new SynchronizationResult()
+        {
+            NewFiles = a.NewFiles + b.NewFiles
+        };
+
+        /// <summary>
+        /// Converts to string.
+        /// </summary>
         public override string ToString() => $"New: {NewFiles}";
     }
 }
