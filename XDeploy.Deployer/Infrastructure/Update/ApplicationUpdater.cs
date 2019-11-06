@@ -38,9 +38,16 @@ namespace XDeploy.Client.Infrastructure
             var diffs = _localTree.Diff(remoteTree, Tree.FileUpdateCheckType.Checksum);
             var toBeDownloaded = diffs
                .Where(x => x.Type == IODifference.ObjectType.File && (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update));
-            _fileManager.Cleanup(diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
             if (toBeDownloaded.Count() != 0)
             {
+                _fileManager.Cleanup(diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
+                //Pre-deployment actions
+                var cmd = new CommandLine(_app.Location);
+                _app.PredeployActions.ToList().ForEach(action => 
+                {
+                    cmd.Invoke(action);
+                });
+
                 result = new SynchronizationResult();
                 LogToConsole("Download started");
 
@@ -64,6 +71,12 @@ namespace XDeploy.Client.Infrastructure
                     await Task.WhenAll(uploadTasks);
                 }
 
+                //Post-Deployment actions
+                _app.PostdeployActions.ToList().ForEach(action =>
+                {
+                    cmd.Invoke(action);
+                });
+                cmd.Close();
                 LogToConsole("Download completed");
             }
             else

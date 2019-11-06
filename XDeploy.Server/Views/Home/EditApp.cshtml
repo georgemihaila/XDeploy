@@ -30,7 +30,7 @@
             <small id="ipHelp" class="form-text text-muted">Allow the app to be deployed only from a single location.</small>
             <input asp-for="DeployerIP" type="text" class="form-control" id="DeployerIP" placeholder="0.0.0.0">
             <span asp-validation-for="DeployerIP" id="ipwarn" class="text-danger"></span>
-            <small @Html.Raw(((Model is null)?false:Model.IPRestrictedDeployer) ? "" : " hidden") id="ipHelp2" class="form-text text-muted">The IP address of the deployer.</small>
+            <small @Html.Raw(((Model is null) ? false : Model.IPRestrictedDeployer) ? "" : " hidden") id="ipHelp2" class="form-text text-muted">The IP address of the deployer.</small>
         </div>
     </div>
     <div class="form-group">
@@ -41,16 +41,32 @@
             <small id="encHelp" class="form-text text-muted">Don't trust 3rd parties? Encrypt the application using <a href="https://crypto.stackexchange.com/questions/2251/how-secure-is-aes-256">AES-256</a> before deployment and decrypt it once deployed. Key management is your duty.</small>
         </div>
     </div>
+    <div class="form-group">
+        <textarea asp-for="PredeployActions" type="text" rows="3" class="form-control" id="pred" placeholder=""></textarea>
+        <span asp-validation-for="PredeployActions" class="text-danger"></span>
+        <small id="predHelp" class="form-text text-muted">Pre-deployment command line actions (relative to the deployment directory)</small>
+    </div>
+    <div class="form-group">
+        <textarea asp-for="PostdeployActions" type="text" rows="3" class="form-control" id="postd" placeholder=""></textarea>
+        <span asp-validation-for="PostdeployActions" class="text-danger"></span>
+        <small id="postdHelp" class="form-text text-muted">Post-deployment command line actions (relative to the deployment directory)</small>
+    </div>
     <button type="submit" class="btn btn-primary">@((Model is null) ? "Create" : "Save changes")</button>
 </form>
 @if (Model?.ID != null)
 {
-    <br/>
+    <br />
     <form asp-controller="Home" asp-action="Delete" asp-route-id="@Model?.ID" method="post">
         <button type="submit" class="btn btn-danger">Delete</button>
     </form>
 }
-
+@if (Model != null)
+{
+<script>
+    $("#pred").val(`@Html.Raw(Model.PredeployActions)`);
+    $("#postd").val(`@Html.Raw(Model.PostdeployActions)`);
+</script>
+}
 <script>
     $(document).ready(function () {
         $("#iprestricted").change(ipres);

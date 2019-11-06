@@ -28,5 +28,15 @@ namespace XDeploy.Core
         /// Gets or sets the encryption key.
         /// </summary>
         public string EncryptionKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pre-deployment command line actions.
+        /// </summary>
+        public IEnumerable<string> PredeployActions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the post-deployment command line actions.
+        /// </summary>
+        public IEnumerable<string> PostdeployActions { get; set; }
     }
 }

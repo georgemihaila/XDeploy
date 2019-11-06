@@ -69,7 +69,12 @@ namespace XDeploy.Server.Controllers
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
-                return Content(JsonConvert.SerializeObject(new { encrypted = application.Encrypted }, Formatting.Indented));
+                return Content(JsonConvert.SerializeObject(new 
+                { 
+                    encrypted = application.Encrypted, 
+                    preDeployment = application.PredeployActions,
+                    postDeployment = application.PostdeployActions
+                }, Formatting.Indented));
             }
             return Unauthorized();
         }

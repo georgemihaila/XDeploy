@@ -75,8 +75,11 @@ namespace XDeploy.Client.Infrastructure.Builders
             {
                 try
                 {
-                    dynamic details = JsonConvert.DeserializeObject(await api.GetAppDetailsAsync(app.ID));
+                    var anon = new { encrypted = false, preDeployment = string.Empty, postDeployment = string.Empty };
+                    var details = JsonConvert.DeserializeAnonymousType(await api.GetAppDetailsAsync(app.ID), anon);
                     app.Encrypted = details.encrypted;
+                    app.PredeployActions = details.preDeployment?.ToString().Replace("\r", string.Empty).Split('\n').ToList();
+                    app.PostdeployActions = details.postDeployment?.ToString().Replace("\r", string.Empty).Split('\n').ToList();
                 }
                 catch (Exception e)
                 {

@@ -59,6 +59,16 @@ namespace XDeploy.Server.Infrastructure.Data
         /// <summary>
         /// Gets or sets the encryption algorithm.
         /// </summary>
-        public EncryptionAlgorithm EncryptionAlgorithm { get; set; } 
+        public EncryptionAlgorithm EncryptionAlgorithm { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pre-deploy actions.
+        /// </summary>
+        public string PredeployActions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the post-deploy actions.
+        /// </summary>
+        public string PostdeployActions { get; set; }
     }
 }

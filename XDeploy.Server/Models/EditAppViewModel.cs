@@ -27,7 +27,9 @@ namespace XDeploy.Server.Models
             Encrypted = src.Encrypted,
             IPRestrictedDeployer = src.IPRestrictedDeployer,
             Name = src.Name,
-            ID = src.ID
+            ID = src.ID,
+            PredeployActions = src.PredeployActions,
+            PostdeployActions = src.PostdeployActions
         };
 
         /// <summary>
@@ -66,5 +68,15 @@ namespace XDeploy.Server.Models
         /// Gets or sets the ID of the application.
         /// </summary>
         public string ID { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pre-deploy actions.
+        /// </summary>
+        public string PredeployActions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the post-deploy actions.
+        /// </summary>
+        public string PostdeployActions { get; set; }
     }
 }

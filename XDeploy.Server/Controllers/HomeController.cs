@@ -122,7 +122,9 @@ namespace XDeploy.Server.Controllers
                     EncryptionAlgorithm = EncryptionAlgorithm.AES256,
                     IPRestrictedDeployer = appModel.IPRestrictedDeployer,
                     LastUpdate = DateTime.MinValue,
-                    Name = appModel.Name
+                    Name = appModel.Name,
+                    PostdeployActions = appModel.PostdeployActions,
+                    PredeployActions = appModel.PredeployActions
                 };
                 _context.Applications.Add(newApp);
                 _context.SaveChanges();
@@ -167,7 +169,9 @@ namespace XDeploy.Server.Controllers
                             EncryptionAlgorithm = EncryptionAlgorithm.AES256,
                             IPRestrictedDeployer = appModel.IPRestrictedDeployer,
                             LastUpdate = foundApp.LastUpdate,
-                            Name = appModel.Name
+                            Name = appModel.Name,
+                            PredeployActions = appModel.PredeployActions,
+                            PostdeployActions = appModel.PostdeployActions
                         };
                         _context.Applications.Remove(foundApp);
                         _context.Applications.Add(newApp);

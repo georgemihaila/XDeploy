@@ -28,6 +28,5 @@ namespace XDeploy.Server.Infrastructure.Data
         /// Gets or sets the expected files.
         /// </summary>
         public ICollection<ExpectedFile> ExpectedFiles { get; set; }
-
     }
 }

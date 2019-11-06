@@ -39,5 +39,15 @@ namespace XDeploy.Server
         /// Gets or sets a value indicating whether this application needs to be encrypted before being deployed and decrypted once deployed.
         /// </summary>
         public bool Encrypted { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pre-deploy actions.
+        /// </summary>
+        public string PredeployActions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the post-deploy actions.
+        /// </summary>
+        public string PostdeployActions { get; set; }
     }
 }
