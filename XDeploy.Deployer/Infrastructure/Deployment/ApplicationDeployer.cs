@@ -42,7 +42,7 @@ namespace XDeploy.Client.Infrastructure
                 .Where(x => x.Type == IODifference.ObjectType.File && (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update))
                 .Select(x => new ExpectedFileInfo()
             {
-                Filename = x.Path,
+                Filename = x.Path.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\'),
                 Checksum = x.Checksum
             });
 
@@ -70,9 +70,9 @@ namespace XDeploy.Client.Infrastructure
                                 result.NewFiles++;
                             }
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            LogToConsole($"Error uploading file {x.Filename}");
+                            LogToConsole($"Error uploading file {x.Filename} ({e.GetType().ToString()})");
                         }
                     }));
                     await Task.WhenAll(uploadTasks);

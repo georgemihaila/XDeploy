@@ -43,7 +43,7 @@ namespace XDeploy.Client.Infrastructure
                 _fileManager.Cleanup(diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
                 //Pre-deployment actions
                 var cmd = new CommandLine(_app.Location);
-                _app.PredeployActions.ToList().ForEach(action => 
+                _app.PredeployActions?.ToList().ForEach(action => 
                 {
                     cmd.Invoke(action);
                 });
@@ -63,16 +63,16 @@ namespace XDeploy.Client.Infrastructure
                             var bytes = await _api.DownloadFileBytesAsync(_app, x.Path);
                             _fileManager.WriteFileBytes(x.Path, bytes);
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            LogToConsole($"Error downloading file {x.Path}");
+                            LogToConsole($"Error downloading file {x.Path} ({e.GetType().ToString()})");
                         }
                     }));
                     await Task.WhenAll(uploadTasks);
                 }
 
                 //Post-Deployment actions
-                _app.PostdeployActions.ToList().ForEach(action =>
+                _app.PostdeployActions?.ToList().ForEach(action =>
                 {
                     cmd.Invoke(action);
                 });

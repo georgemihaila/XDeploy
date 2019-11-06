@@ -94,7 +94,7 @@ namespace XDeploy.Server.Controllers
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
 
-                location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
+                location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
                 var path = Path.Combine(_cachedFilesPath, application.ID);
                 var res = (new FileManager(path).HasFile(location, checksum));
                 return Content(JsonConvert.SerializeObject(res));
@@ -125,7 +125,7 @@ namespace XDeploy.Server.Controllers
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
 
-                location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
+                location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
                 var path = Path.Combine(_cachedFilesPath, application.ID);
                 var fileManager = new FileManager(path);
                 if (fileManager.HasFile(location))
@@ -183,7 +183,7 @@ namespace XDeploy.Server.Controllers
                 {
                     ID = RNG.GetRandomString(8, RNG.StringType.Alphanumeric),
                     Checksum = x.Checksum,
-                    Filename = x.Filename.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\'),
+                    Filename = x.Filename.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\'),
                     ParentJob = job 
                 }).ToList();
                 _context.DeploymentJobs.Add(job);
@@ -211,7 +211,7 @@ namespace XDeploy.Server.Controllers
 
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                location = location.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
+                location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
                 if (deploymentJob.ApplicationID != application.ID)
                 {
                     return BadRequest("Deployment job doesn't match application.");
