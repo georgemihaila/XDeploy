@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 
 namespace XDeploy.Core.IO
 {
@@ -50,6 +50,19 @@ namespace XDeploy.Core.IO
             return (Cryptography.SHA256CheckSum(path), File.ReadAllBytes(path));
         }
 
+        /// <summary>
+        /// Writes a file to disk.
+        /// </summary>
+        public void WriteFileBytes(string relativePath, byte[] bytes)
+        {
+            var dir = Path.Combine(_baseLocation, Path.Combine(relativePath.Split(Path.DirectorySeparatorChar)[..^1]));
+            Directory.CreateDirectory(dir);
+            File.WriteAllBytes(Path.Join(_baseLocation, relativePath), bytes);
+        }
+
+        /// <summary>
+        /// Uses a stream to write a file.
+        /// </summary>
         public void WriteFile(string relativePath, Stream stream, int length)
         {
             var dir = Path.Combine(_baseLocation, Path.Combine(relativePath.Split(Path.DirectorySeparatorChar)[..^1]));
@@ -64,6 +77,40 @@ namespace XDeploy.Core.IO
                 }
                 fs.Write(buffer, 0, buffer.Length);
                 fs.Close();
+            }
+        }
+
+        /// <summary>
+        /// Cleans up a directory based on a list of differences.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">removals</exception>
+        /// <exception cref="ArgumentOutOfRangeException">All objects must be of type {IODifference.IODifferenceType.Removal}</exception>
+        public void Cleanup(IEnumerable<IODifference> removals)
+        {
+            if (removals == null)
+                throw new ArgumentNullException(nameof(removals));
+            if (!removals.All(x => x.DifferenceType == IODifference.IODifferenceType.Removal))
+                throw new ArgumentOutOfRangeException($"All objects must be of type {IODifference.IODifferenceType.Removal}");
+
+            foreach (var removal in removals)
+            {
+                removal.Path = removal.Path.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
+                var path = Path.Join(_baseLocation, removal.Path);
+                switch (removal.Type) //TODO: Here, we should also remove corresponding files and directories from the removal list so we don't end up with too many unnecessary operations
+                {
+                    case IODifference.ObjectType.Directory:
+                        if (Directory.Exists(path))
+                        {
+                            Directory.Delete(path, true);
+                        }
+                        break;
+                    case IODifference.ObjectType.File:
+                        if (System.IO.File.Exists(path))
+                        {
+                            System.IO.File.Delete(path);
+                        }
+                        break;
+                }
             }
         }
     }

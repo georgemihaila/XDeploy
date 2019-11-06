@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using XDeploy.Core;
+using XDeploy.Core.Extensions;
+using XDeploy.Core.IO;
 
 namespace XDeploy.Client.Infrastructure
 {
@@ -28,9 +32,44 @@ namespace XDeploy.Client.Infrastructure
         public override async Task<SynchronizationResult> SynchronizeAsync()
         {
             var result = new SynchronizationResult();
-            LogToConsole("Update started");
+            var remoteTree = await _api.GetRemoteTreeAsync(_app);
+            _localTree = new Tree(_app.Location);
+            _localTree.Relativize();
+            var diffs = _localTree.Diff(remoteTree, Tree.FileUpdateCheckType.Checksum);
+            var toBeDownloaded = diffs
+               .Where(x => x.Type == IODifference.ObjectType.File && (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update));
+            _fileManager.Cleanup(diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
+            if (toBeDownloaded.Count() != 0)
+            {
+                result = new SynchronizationResult();
+                LogToConsole("Download started");
 
-            LogToConsole("Update completed");
+                var chunks = toBeDownloaded.ChunkBy(FILES_CHUNK_SIZE); //Do multiple downloads at once instead of one at a time
+
+                foreach (var chunk in chunks)
+                {
+                    var uploadTasks = chunk.Select(x => Task.Run(async () =>
+                    {
+                        try
+                        {
+                            LogToConsole($"Downloading {x.Path}...");
+                            var bytes = await _api.DownloadFileBytesAsync(_app, x.Path);
+                            _fileManager.WriteFileBytes(x.Path, bytes);
+                        }
+                        catch
+                        {
+                            LogToConsole($"Error downloading file {x.Path}");
+                        }
+                    }));
+                    await Task.WhenAll(uploadTasks);
+                }
+
+                LogToConsole("Download completed");
+            }
+            else
+            {
+                LogToConsole("Up to date");
+            }
             return result;
         }
     }

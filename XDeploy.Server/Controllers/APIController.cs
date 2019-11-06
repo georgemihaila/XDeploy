@@ -102,26 +102,8 @@ namespace XDeploy.Server.Controllers
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                foreach (var removal in differences.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal).ToList())
-                {
-                    removal.Path = removal.Path.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
-                    var path = Path.Join(_cachedFilesPath, application.ID, removal.Path);
-                    switch (removal.Type) //TODO: Here, we should also remove corresponding files and directories from the removal list so we don't end up with too many unnecessary operations
-                    {
-                        case IODifference.ObjectType.Directory:
-                            if (Directory.Exists(path))
-                            {
-                                Directory.Delete(path, true);
-                            }
-                            break;
-                        case IODifference.ObjectType.File:
-                            if (System.IO.File.Exists(path))
-                            {
-                                System.IO.File.Delete(path);
-                            }
-                            break;
-                    }
-                }
+                var fileManager = new FileManager(Path.Combine(_cachedFilesPath, application.ID));
+                fileManager.Cleanup(differences.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
                 return Ok();
             }
             return Unauthorized();

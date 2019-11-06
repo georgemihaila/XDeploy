@@ -8,6 +8,7 @@ using XDeploy.Core;
 using XDeploy.Core.IO;
 using XDeploy.Core.IO.Extensions;
 using XDeploy.Core.Extensions;
+using System.Threading;
 
 namespace XDeploy.Client.Infrastructure
 {
@@ -82,7 +83,7 @@ namespace XDeploy.Client.Infrastructure
             }
             else
             {
-                LogToConsole("No changes");
+                LogToConsole("Up to date");
             }
 
             return result;

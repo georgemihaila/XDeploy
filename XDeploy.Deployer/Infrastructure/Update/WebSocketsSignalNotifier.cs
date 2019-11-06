@@ -80,7 +80,7 @@ namespace XDeploy.Client.Infrastructure
         {
             for (int i = 0; i < _appWs.Count; i++)
             {
-                _appWs[i].WebSocket.Close();
+                _appWs[i].WebSocket.Close(CloseStatusCode.Normal);
                 _appWs[i] = (_appWs[i].ID, (WebSocket)null);
             }
         }
