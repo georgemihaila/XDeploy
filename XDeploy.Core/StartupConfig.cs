@@ -77,5 +77,10 @@ namespace XDeploy.Core
         /// Gets or sets a value indicating whether the application will show detailed execution logs.
         /// </summary>
         public bool Verbose { get; set; }
+
+        /// <summary>
+        /// Gets or sets the proxy configuration.
+        /// </summary>
+        public ProxyConfiguration Proxy { get; set; }
     }
 }

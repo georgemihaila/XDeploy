@@ -18,6 +18,7 @@ namespace XDeploy.Core
     {
         private readonly string _endpoint;
         private readonly string _authHeaderValue;
+        private readonly ProxyConfiguration _proxy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XDeployAPI"/> class.
@@ -26,6 +27,7 @@ namespace XDeploy.Core
         {
             _authHeaderValue = "Basic " + Cryptography.Base64Encode(string.Join(':', config.Email, config.APIKey));
             _endpoint = config.Endpoint + "/api";
+            _proxy = config.Proxy;
         }
 
         /// <summary>
@@ -93,18 +95,22 @@ namespace XDeploy.Core
             var contentLocation = relativeLocation.Replace("%5C", "\\").TrimStart('\\');
             if (!await HasFileAsync(app.ID, contentLocation, checksum))
             {
-                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + app.ID + "&jobid=" + jobid);
-                request2.Method = "POST";
-                request2.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
-                request2.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
-                request2.Headers["X-SHA256"] = checksum;
+                var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + app.ID + "&jobid=" + jobid);
+                request.Method = "POST";
+                request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+                request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
+                request.Headers["X-SHA256"] = checksum;
+                if (_proxy != null)
+                {
+                    request.Proxy = new WebProxy(_proxy.Address);
+                }
                 //request2.Headers[Httprequest2Header.ContentLength] = bytes.Length.ToString();
-                using (var stream = await request2.GetRequestStreamAsync())
+                using (var stream = await request.GetRequestStreamAsync())
                 {
                     stream.Write(fileBytes, 0, fileBytes.Length);
                     stream.Close();
                 }
-                using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
+                using (var reader = new StreamReader((await request.GetResponseAsync()).GetResponseStream()))
                 {
                     return reader.ReadToEnd();
                 }
@@ -129,19 +135,23 @@ namespace XDeploy.Core
             var checksum = Cryptography.SHA256CheckSum(fullFilePath);
             if (!await HasFileAsync(appID, contentLocation, checksum))
             {
-                var request2 = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + appID + "&jobid=" + jobid);
-                request2.Method = "POST";
-                request2.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
-                request2.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
-                request2.Headers["X-SHA256"] = checksum;
+                var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + appID + "&jobid=" + jobid);
+                request.Method = "POST";
+                request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+                request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
+                request.Headers["X-SHA256"] = checksum;
+                if (_proxy != null)
+                {
+                    request.Proxy = new WebProxy(_proxy.Address);
+                }
                 //request2.Headers[Httprequest2Header.ContentLength] = bytes.Length.ToString();
-                using (var stream = await request2.GetRequestStreamAsync())
+                using (var stream = await request.GetRequestStreamAsync())
                 {
                     var bytes = File.ReadAllBytes(fullFilePath);
                     stream.Write(bytes, 0, bytes.Length);
                     stream.Close();
                 }
-                using (var reader = new StreamReader((await request2.GetResponseAsync()).GetResponseStream()))
+                using (var reader = new StreamReader((await request.GetResponseAsync()).GetResponseStream()))
                 {
                     return reader.ReadToEnd();
                 }
@@ -159,6 +169,10 @@ namespace XDeploy.Core
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentLocation] = relativeLocation;
             request.Headers["X-SHA256"] = checksum;
+            if (_proxy != null)
+            {
+                request.Proxy = new WebProxy(_proxy.Address);
+            }
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new StreamReader(response.GetResponseStream()))
             {
@@ -192,6 +206,10 @@ namespace XDeploy.Core
             request.Method = "GET";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentLocation] = relativePath;
+            if (_proxy != null)
+            {
+                request.Proxy = new WebProxy(_proxy.Address);
+            }
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new BinaryReader(response.GetResponseStream()))
             {
@@ -204,6 +222,10 @@ namespace XDeploy.Core
             var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
             request.Method = "GET";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            if (_proxy != null)
+            {
+                request.Proxy = new WebProxy(_proxy.Address);
+            }
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new StreamReader(response.GetResponseStream()))
             {
@@ -216,6 +238,10 @@ namespace XDeploy.Core
             var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
             request.Method = "POST";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
+            if (_proxy != null)
+            {
+                request.Proxy = new WebProxy(_proxy.Address);
+            }
             var response = (HttpWebResponse)await request.GetResponseAsync();
         }
 
@@ -225,6 +251,10 @@ namespace XDeploy.Core
             request.Method = "POST";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentType] = "application/json";
+            if (_proxy != null)
+            {
+                request.Proxy = new WebProxy(_proxy.Address);
+            }
             if (content != null)
             {
                 using (var stream = await request.GetRequestStreamAsync())

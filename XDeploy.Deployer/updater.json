@@ -1,19 +1,13 @@
 ﻿{
-  "Mode":"Updater",
-  "Endpoint": "https://localhost:44353",
-  "Email": "admin@example.com",
-  "APIKey": "pkjA3nzS2aLTa16YZuHhtVC2ogOIIIkO",
+  "Mode": "Updater",
+  "Endpoint": "https://xdeploy.0x9fd8de5fc2a7.world",
+  "Email": "george_mihaila@outlook.com",
+  "APIKey": "eHr5v8Z8lPJnYH0QiHw7ebDVx4Fytfxt",
   "SyncServerPort": 7745,
   "Apps": [
     {
-      "ID": "bnd6qHeUr9",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\RemoteDeploy\\XDeploy.Deployer\\bin\\Debug\\netcoreapp3.0\\target\\1",
-      "EncryptionKey": "3fc9b689459d738f8c88a3a48aa9e33542016b7a4052e001aaa536fca74813cb7dd530c4d36da47cd33396718ef1fa1e8c0f7d91ee551d7fdc1c73aa65edb454"
-    },
-    {
-      "ID": "Ldjef2oALk",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\RemoteDeploy\\XDeploy.Deployer\\bin\\Debug\\netcoreapp3.0\\target\\2",
-      "EncryptionKey": "3fc9b689459d738f8c88a3a48aa9e33542016b7a4052e001aaa536fca74813cb7dd530c4d36da47cd33396718ef1fa1e8c0f7d91ee551d7fdc1c73aa65edb454"
+      "ID": "H61TfvyRXJ",
+      "Location": "C:\\Users\\georg\\Source\\Repos\\XDeploy\\XDeploy.Server\\bin\\Debug\\netcoreapp3.0"
     }
   ],
   "Verbose": true
