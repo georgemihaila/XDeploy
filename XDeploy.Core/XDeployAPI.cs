@@ -18,7 +18,7 @@ namespace XDeploy.Core
     {
         private readonly string _endpoint;
         private readonly string _authHeaderValue;
-        private readonly ProxyConfiguration _proxy;
+        private readonly IWebProxy _proxy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XDeployAPI"/> class.
@@ -100,10 +100,7 @@ namespace XDeploy.Core
                 request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
                 request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
                 request.Headers["X-SHA256"] = checksum;
-                if (_proxy != null)
-                {
-                    request.Proxy = new WebProxy(_proxy.Address);
-                }
+                request.Proxy = _proxy;
                 //request2.Headers[Httprequest2Header.ContentLength] = bytes.Length.ToString();
                 using (var stream = await request.GetRequestStreamAsync())
                 {
@@ -140,10 +137,7 @@ namespace XDeploy.Core
                 request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
                 request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
                 request.Headers["X-SHA256"] = checksum;
-                if (_proxy != null)
-                {
-                    request.Proxy = new WebProxy(_proxy.Address);
-                }
+                request.Proxy = _proxy;
                 //request2.Headers[Httprequest2Header.ContentLength] = bytes.Length.ToString();
                 using (var stream = await request.GetRequestStreamAsync())
                 {
@@ -169,10 +163,7 @@ namespace XDeploy.Core
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentLocation] = relativeLocation;
             request.Headers["X-SHA256"] = checksum;
-            if (_proxy != null)
-            {
-                request.Proxy = new WebProxy(_proxy.Address);
-            }
+            request.Proxy = _proxy;
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new StreamReader(response.GetResponseStream()))
             {
@@ -206,10 +197,7 @@ namespace XDeploy.Core
             request.Method = "GET";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentLocation] = relativePath;
-            if (_proxy != null)
-            {
-                request.Proxy = new WebProxy(_proxy.Address);
-            }
+            request.Proxy = _proxy;
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new BinaryReader(response.GetResponseStream()))
             {
@@ -224,7 +212,7 @@ namespace XDeploy.Core
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             if (_proxy != null)
             {
-                request.Proxy = new WebProxy(_proxy.Address);
+                request.Proxy = _proxy;
             }
             var response = (HttpWebResponse)await request.GetResponseAsync();
             using (var reader = new StreamReader(response.GetResponseStream()))
@@ -238,10 +226,7 @@ namespace XDeploy.Core
             var request = (HttpWebRequest)WebRequest.Create(_endpoint + path);
             request.Method = "POST";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
-            if (_proxy != null)
-            {
-                request.Proxy = new WebProxy(_proxy.Address);
-            }
+            request.Proxy = _proxy;
             var response = (HttpWebResponse)await request.GetResponseAsync();
         }
 
@@ -251,10 +236,7 @@ namespace XDeploy.Core
             request.Method = "POST";
             request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
             request.Headers[HttpRequestHeader.ContentType] = "application/json";
-            if (_proxy != null)
-            {
-                request.Proxy = new WebProxy(_proxy.Address);
-            }
+            request.Proxy = _proxy;
             if (content != null)
             {
                 using (var stream = await request.GetRequestStreamAsync())

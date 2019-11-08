@@ -7,8 +7,8 @@
   "Apps": [
     {
       "ID": "H61TfvyRXJ",
-      "Location": "C:\\Users\\georg\\Source\\Repos\\XDeploy\\XDeploy.Server\\bin\\Debug\\netcoreapp3.0"
+      "Location": "C:\\Users\\georg\\Desktop\\TradingBot\\TradingBot.Server\\bin\\Debug\\netcoreapp3.0"
     }
-  ]
+  ],
   "Verbose": true
 }

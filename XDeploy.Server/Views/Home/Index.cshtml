@@ -14,7 +14,7 @@
                 $.post("/api/new-key", function (data) {
                     $("#api-area").html('<p>This is your API key. Store it somewhere safe.</p><p class="text-light bg-dark">' + data + '</p>');
                 }).fail(function (error) {
-                    $("#api-area").html('<p>An error occurred.</br>Details:</p><p class="text-light bg-dark">' + error + '</p>');
+                    $("#api-area").html('<p>An error occurred.</br>Details:</p><p class="text-light bg-dark">' + "[" + error.status + "] " + error.responseText + '</p>');
                 });
                 this.generateAPIKey = null;
             }

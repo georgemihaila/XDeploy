@@ -26,7 +26,7 @@ namespace XDeploy.Client.Infrastructure
         /// <summary>
         /// Chunk size for processing multiple files at once.
         /// </summary>
-        protected const int FILES_CHUNK_SIZE = 4;
+        protected const int FILES_CHUNK_SIZE = 10;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationSynchronizerBase"/> class.
