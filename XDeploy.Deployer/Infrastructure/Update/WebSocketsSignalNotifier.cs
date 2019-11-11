@@ -16,6 +16,7 @@ namespace XDeploy.Client.Infrastructure
         private readonly string _endpoint;
         private readonly string _authString;
         private readonly IList<(string ID, WebSocket WebSocket)> _appWs;
+        private readonly ProxyConfiguration _proxy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebSocketsSignalNotifier"/> class.
@@ -50,6 +51,23 @@ namespace XDeploy.Client.Infrastructure
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="WebSocketsSignalNotifier"/> class.
+        /// </summary>
+        /// <param name="apps">The apps.</param>
+        /// <param name="enpoint">The enpoint.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="apiKey">The API key.</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <exception cref="ArgumentNullException">proxy</exception>
+        public WebSocketsSignalNotifier(IEnumerable<ApplicationInfo> apps, string enpoint, string username, string apiKey, ProxyConfiguration proxy) : this(apps, enpoint, username, apiKey)
+        {
+            if (proxy is null)
+                throw new ArgumentNullException(nameof(proxy));
+
+            _proxy = proxy;
+        }
+
+        /// <summary>
         /// Occurs when the server receives a correct synchronization signal.
         /// </summary>
         public event EventHandler<string> SyncSignalReceived;
@@ -62,6 +80,10 @@ namespace XDeploy.Client.Infrastructure
             for (int i = 0; i < _appWs.Count; i++)
             {
                 var ws = new WebSocket(string.Format("{0}/api/ws?authString={1}&id={2}", _endpoint.Replace("https://", "wss://").Replace("http://", "ws://"), _authString.Replace("Basic ", string.Empty), _appWs[i].ID));
+                if (_proxy != null)
+                {
+                    ws.SetProxy(_proxy.Address, _proxy.ProxyCredentials.UserName, _proxy.ProxyCredentials.Password);
+                }
                 ws.SslConfiguration.CheckCertificateRevocation = false;
                 ws.OnMessage += (sender, e) =>
                 {

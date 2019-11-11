@@ -47,7 +47,14 @@ namespace XDeploy.Client.Infrastructure.Builders
                     synchronizers = apps.Select(x => new ApplicationDeployer(api, x));
                     break;
                 case ApplicationMode.Updater:
-                    notifier = new WebSocketsSignalNotifier(apps, _config.Endpoint, _config.Email, _config.APIKey);
+                    if (_config.Proxy != null)
+                    {
+                        notifier = new WebSocketsSignalNotifier(apps, _config.Endpoint, _config.Email, _config.APIKey, _config.Proxy);
+                    }
+                    else
+                    {
+                        notifier = new WebSocketsSignalNotifier(apps, _config.Endpoint, _config.Email, _config.APIKey);
+                    }
                     synchronizers = apps.Select(x => new ApplicationUpdater(api, x));
                     break;
                 default:
@@ -87,7 +94,7 @@ namespace XDeploy.Client.Infrastructure.Builders
                 }
                 if (!Directory.Exists(app.Location))
                 {
-                    throw new StartupException($"Invalid application path: {0}", new DirectoryNotFoundException(app.Location));
+                    throw new StartupException($"Invalid application path: {app.Location}", new DirectoryNotFoundException(app.Location));
                 }
             }
             return apps;
