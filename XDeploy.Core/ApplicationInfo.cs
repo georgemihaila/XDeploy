@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -22,6 +23,7 @@ namespace XDeploy.Core
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="ApplicationInfo"/> is encrypted.
         /// </summary>
+        [JsonIgnore]
         public bool Encrypted { get; set; } = false;
 
         /// <summary>

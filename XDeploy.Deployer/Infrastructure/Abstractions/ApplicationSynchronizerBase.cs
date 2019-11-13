@@ -25,9 +25,9 @@ namespace XDeploy.Client.Infrastructure
         protected const string NLT = "\r\n\t";
 
         /// <summary>
-        /// Chunk size for processing multiple files at once.
+        /// Maximum concurrent uploads/downloads.
         /// </summary>
-        protected const int FILES_CHUNK_SIZE = 10;
+        protected const int MAX_UPLOAD_COUNT = 25;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationSynchronizerBase"/> class.

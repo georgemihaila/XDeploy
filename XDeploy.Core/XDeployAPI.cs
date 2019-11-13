@@ -127,7 +127,7 @@ namespace XDeploy.Core
         /// <summary>
         /// Checks if the server already has a specific file and in case it does not, it uploads it.
         /// </summary>
-        public async Task<string> UploadFileIfNotExistsAsync(string appID, int jobid, string baseDirectory, string fullFilePath)
+        public async Task<string> UploadFileIfNotExistsAsync(string appID, int jobid, string baseDirectory, string fullFilePath) => await Task.Run(async () => 
         {
             var contentLocation = fullFilePath.Replace(baseDirectory, string.Empty).Replace("%5C", "\\").TrimStart('\\');
             var checksum = Cryptography.SHA256CheckSum(fullFilePath);
@@ -155,7 +155,7 @@ namespace XDeploy.Core
             {
                 return "Exists";
             }
-        }
+        });
 
         private async Task<bool> HasFileAsync(string appID, string relativeLocation, string checksum)
         {
@@ -192,7 +192,7 @@ namespace XDeploy.Core
         /// <summary>
         /// Downloads an application file's bytes.
         /// </summary>
-        public async Task<byte[]> DownloadFileBytesAsync(string appID, string relativePath)
+        public async Task<byte[]> DownloadFileBytesAsync(string appID, string relativePath) => await Task.Run(async() => 
         {
             var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/DownloadFile?id=" + appID);
             request.Method = "GET";
@@ -204,7 +204,7 @@ namespace XDeploy.Core
             {
                 return reader.ReadBytes(Convert.ToInt32(response.Headers[HttpRequestHeader.ContentLength]));
             }
-        }
+        });
 
         private async Task<string> GETRequestAsync(string path)
         {

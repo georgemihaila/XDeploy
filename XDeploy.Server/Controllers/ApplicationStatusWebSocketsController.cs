@@ -13,40 +13,33 @@ using XDeploy.Server.Infrastructure.Data;
 
 namespace XDeploy.Server.Controllers
 {
-    [Route("/api/ws")]
-    [AllowAnonymous]
-    public class WebSocketsController : APIValidationBase
+    [Route("/ws/app-status")]
+    [Authorize]
+    public class ApplicationStatusWebSocketsController : ControllerBase
     {
-        public WebSocketsController(ApplicationDbContext context) : base(context)
-        {
+        private readonly ApplicationDbContext _context;
 
+        public ApplicationStatusWebSocketsController(ApplicationDbContext context)
+        {
+            _context = context;
         }
 
         [HttpGet]
-        public async Task Get(string authString, string id)
+        public async Task Get()
         {
             var context = ControllerContext.HttpContext;
             if (context.WebSockets.IsWebSocketRequest)
             {
-                var creds = Decode(authString);
-                if (!ValidateCredentials(creds))
-                {
-                    context.Response.StatusCode = 401;
-                    return;
-                }
-                var app = _context.Applications.Find(id);
-                if (app is null || app.OwnerEmail != creds.Value.Email)
-                {
-                    context.Response.StatusCode = 401;
-                    return;
-                }
                 WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                var lastUpdate = app.LastUpdate;
                 await Task.Run(async () =>
                 {
-                    WebsocketsIOC.RegisterOnAppUpdate(id, async (data) =>
+                    WebsocketsIOC.RegisterApplicationLockedChanged(async ((string ApplicationID, bool Locked) data) =>
                     {
-                        await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = data }));
+                        var app = _context.Applications.Find(data.ApplicationID);
+                        if (app?.OwnerEmail == User.Identity.Name)
+                        {
+                            await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "lockedChanged", id = data.ApplicationID, locked = data.Locked }));
+                        }
                     });
                     while (webSocket.State == WebSocketState.Open)
                     {
@@ -57,7 +50,7 @@ namespace XDeploy.Server.Controllers
                         }
                         await Task.Delay(1000);
                     }
-                    
+
                 });
             }
             else
@@ -65,6 +58,7 @@ namespace XDeploy.Server.Controllers
                 context.Response.StatusCode = 400;
             }
         }
+
         private static async Task SendMessageAsync(HttpContext context, WebSocket webSocket, string message)
         {
             var bytes = Encoding.ASCII.GetBytes(message);

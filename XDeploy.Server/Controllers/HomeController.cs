@@ -7,13 +7,16 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using XDeploy.Core;
 using XDeploy.Server.Infrastructure;
 using XDeploy.Server.Infrastructure.Data;
 using XDeploy.Server.Infrastructure.Data.Extensions;
+using XDeploy.Server.Infrastructure.Data.MongoDb;
 using XDeploy.Server.Models;
 
 namespace XDeploy.Server.Controllers
@@ -23,13 +26,13 @@ namespace XDeploy.Server.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
-        private readonly string _cachedFilesPath;
+        private readonly MongoDbFileManager _fileManager;
 
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, ApplicationDbContext context)
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, MongoDbFileManager fileManager)
         {
             _logger = logger;
             _context = context;
-            _cachedFilesPath = configuration.GetValue<string>("CacheLocation");
+            _fileManager = fileManager;
         }
 
         [Route("/")]
@@ -64,17 +67,11 @@ namespace XDeploy.Server.Controllers
 
         [Authorize]
         [HttpPost]
-        public IActionResult Delete([ModelBinder(Name = "id")] Application application)
+        public async Task<IActionResult> Delete([ModelBinder(Name = "id")] Application application)
         {
             if (application != null && application.HasOwner(User))
             {
-                //Remove cache directory and all associated files if necessary
-                var path = Path.Join(_cachedFilesPath, application.ID);
-                if (Directory.Exists(path))
-                {
-                    Directory.Delete(path, true); 
-                }
-
+                await _fileManager.DeleteAllFilesAsync(application.ID);
                 _context.Applications.Remove(application);
                 _context.SaveChanges();
                 return RedirectToAction("Index");
@@ -128,7 +125,6 @@ namespace XDeploy.Server.Controllers
                 };
                 _context.Applications.Add(newApp);
                 _context.SaveChanges();
-                Directory.CreateDirectory(Path.Join(_cachedFilesPath, newApp.ID));
                 return RedirectToAction("Index");
             }
             else
@@ -145,7 +141,7 @@ namespace XDeploy.Server.Controllers
         [Authorize]
         [Route("/edit-app", Name = "EditApp")]
         [HttpPost]
-        public IActionResult Edit([FromForm] EditAppViewModel appModel)
+        public async Task<IActionResult> Edit([FromForm] EditAppViewModel appModel)
         {
             var stupidRegexCheck = true; // [RegularExpressionAttribute] marks null or empty strings as valid
             if (appModel.IPRestrictedDeployer)
@@ -176,24 +172,14 @@ namespace XDeploy.Server.Controllers
                         _context.Applications.Remove(foundApp);
                         _context.Applications.Add(newApp);
                         _context.SaveChanges();
-
-                        //Remove encrypted or non-encrypted files from the associated cache directory (if possible)
-                        var files = Directory.EnumerateFiles(Path.Combine(_cachedFilesPath, newApp.ID), "*.*", SearchOption.AllDirectories);
                         if (newApp.Encrypted)
                         {
-                            foreach (var file in files.Where(x => !x.EndsWith(".enc")))
-                            {
-                                System.IO.File.Delete(file);
-                            }
+                            await _fileManager.DeleteAllNonEncryptedFilesAsync(newApp.ID);
                         }
                         else
                         {
-                            foreach (var file in files.Where(x => x.EndsWith(".enc")))
-                            {
-                                System.IO.File.Delete(file);
-                            }
+                            await _fileManager.DeleteAllEncryptedFilesAsync(newApp.ID);
                         }
-
                         return RedirectToAction("Index");
                     }
                     else
@@ -216,6 +202,30 @@ namespace XDeploy.Server.Controllers
             }
 
         }
+
+        [HttpGet]
+        [Authorize]
+        [Route("/config.json")]
+        public IActionResult GenerateConfiguration() => Content(JsonConvert.SerializeObject(new StartupConfig() 
+        {
+            Mode = ApplicationMode.Deployer,
+            Endpoint =  $"{HttpContext.Request.Scheme}://{Request.Host.Value}",
+            Email = User.Identity.Name,
+            APIKey = "your-api-key",
+            SyncServerPort = 7745,
+            Apps = _context.Applications
+            .Where(x => x.OwnerEmail == User.Identity.Name)
+            .Select(x => new ApplicationInfo 
+            { 
+                ID = x.ID,
+                Location = "app-location",
+                EncryptionKey = (x.Encrypted)? "encryption-key" : null
+            })
+        }, Formatting.Indented, new JsonSerializerSettings() 
+        {
+            NullValueHandling = NullValueHandling.Ignore
+        }), "application/json");
+
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

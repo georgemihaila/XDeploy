@@ -12,7 +12,7 @@
             function generateAPIKey() {
                 $("#gen-key").text("Generating key...");
                 $.post("/api/new-key", function (data) {
-                    $("#api-area").html('<p>This is your API key. Store it somewhere safe.</p><p class="text-light bg-dark">' + data + '</p>');
+                    $("#api-area").html('<p>This is your API key. Store it somewhere safe.</p><p class="text-light bg-dark">' + data + '</p><br/><a href="/" class="btn btn-primary">Continue</a');
                 }).fail(function (error) {
                     $("#api-area").html('<p>An error occurred.</br>Details:</p><p class="text-light bg-dark">' + "[" + error.status + "] " + error.responseText + '</p>');
                 });
@@ -21,45 +21,68 @@
         </script>
         <div id="api-area">
             <p>Before starting, you need an API key.</p>
-            <button id="gen-key" onclick="generateAPIKey()" type="button" class="btn btn-primary">Click here to generate an API key</button>
+            <button id="gen-key" onclick="generateAPIKey()" type="button" class="btn btn-primary">Generate an API key</button>
         </div>
     }
     else
     {
         if (Model.Applications.Count() == 0)
         {
-            <p>You don't have any registered applications.</p>
+            <p>You have no applications.</p>
         }
         else
         {
             <p>Your apps:</p>
-            foreach (var app in Model.Applications)
-            {
-                <div class="card d-inline-block" style="width: 18rem;">
-                    <div class="card-body">
-                        <h5 class="card-title">@app.Name</h5>
-                        <p class="card-text">@app.Description</p>
+            <div class="card-group">
+                @foreach (var app in Model.Applications)
+                {
+                    <div class="card d-inline-block" style="width: 18rem;">
+                        <div id="header-@app.ID" class="card-body @Html.Raw(app.Locked?"bg-warning":"bg-success")">
+                            <h5 class="card-title">@app.Name</h5>
+                            <p class="card-text">@app.Description</p>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item bg-light">ID: @app.ID</li>
+                            <li class="list-group-item bg-light">IP-restricted: @app.IPRestrictedDeployer</li>
+                            @if (app.IPRestrictedDeployer)
+                            {
+                                <li class="list-group-item bg-light">IP: @app.DeployerIP</li>
+                            }
+                            <li class="list-group-item bg-light">Encrypted: @app.Encrypted</li>
+                            <li class="list-group-item bg-light">Last updated: @((app.LastUpdate == DateTime.MinValue) ? "Never" : app.LastUpdate.ToString())</li>
+                        </ul>
+                        <div class="card-body bg-light">
+                            <a asp-action="EditApp" asp-route-id="@app.ID" class="card-link">Configure</a>
+                        </div>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">ID: @app.ID</li>
-                        <li class="list-group-item">IP-restricted: @app.IPRestrictedDeployer</li>
-                        @if (app.IPRestrictedDeployer)
-                        {
-                            <li class="list-group-item">IP: @app.DeployerIP</li>
-                        }
-                        <li class="list-group-item">Encrypted: @app.Encrypted</li>
-                        <li class="list-group-item">Last updated: @((app.LastUpdate == DateTime.MinValue) ? "Never" : app.LastUpdate.ToString())</li>
-                    </ul>
-                    <div class="card-body">
-                        <a asp-action="EditApp" asp-route-id="@app.ID" class="card-link">Configure</a>
-                    </div>
-                </div>
-            }
+                }
+            </div>
+            <p>
+                <a asp-controller="Home" asp-action="GenerateConfiguration">Click here</a>
+                to download your client configuration file.
+            </p>
+            <script>
+                var ws = new WebSocket(`wss://${location.host}/ws/app-status`);
+                ws.onmessage = function (data) {
+                    let msg = JSON.parse(data.data);
+                    console.log(msg);
+                    if (msg.locked) {
+                        $("#header-" + msg.id).removeClass('bg-success');
+                        $("#header-" + msg.id).addClass('bg-warning');
+                    }
+                    else {
+                        $("#header-" + msg.id).removeClass('bg-warning');
+                        $("#header-" + msg.id).addClass('bg-success');
+                    }
+                };
+                ws.onerror = function (err) {
+                    console.log(err);
+                }
+            </script>
         }
         <br />
         <a asp-controller="Home" asp-action="EditApp" id="reg-app" class="btn btn-primary">Register a new application</a>
-        <div id="treeview-checkable" class=""></div>
-        <div id="checkable-output" class=""></div>
+
     }
 }
 else

@@ -45,7 +45,7 @@ namespace XDeploy.Client.Infrastructure
 
                 await _api.LockApplicationAsync(_app);
 
-                var chunks = toBeUploaded.ChunkBy(FILES_CHUNK_SIZE); //Do multiple uploads at once instead of one at a time
+                var chunks = toBeUploaded.ChunkBy(MAX_UPLOAD_COUNT); //Do multiple uploads at once instead of one at a time
                 foreach (var chunk in chunks)
                 {
                     var uploadTasks = chunk.Select(x => Task.Run(async() => 

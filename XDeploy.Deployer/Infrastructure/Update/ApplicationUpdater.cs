@@ -52,7 +52,7 @@ namespace XDeploy.Client.Infrastructure
                 result = new SynchronizationResult();
                 LogToConsole("Download started");
 
-                var chunks = toBeDownloaded.ChunkBy(FILES_CHUNK_SIZE); //Do multiple downloads at once instead of one at a time
+                var chunks = toBeDownloaded.ChunkBy(MAX_UPLOAD_COUNT); //Do multiple downloads at once instead of one at a time
 
                 foreach (var chunk in chunks)
                 {

@@ -60,7 +60,7 @@ namespace XDeploy.Server.Controllers
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
-                return Content(JsonConvert.SerializeObject(await _fileManager.GetAllFilesForApplicationAsync(application.ID)));
+                return Content(JsonConvert.SerializeObject(await _fileManager.GetAllFilesAsync(application.ID)));
             }
             return Unauthorized();
         }
@@ -95,7 +95,7 @@ namespace XDeploy.Server.Controllers
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
 
-                location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
+                location = FormatFilePathString(location);
                 return Content(JsonConvert.SerializeObject(await _fileManager.HasFileAsync(application.ID, location, checksum)));
             }
             return Unauthorized();
@@ -108,7 +108,7 @@ namespace XDeploy.Server.Controllers
             {
                 foreach(var removedFile in differences.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal))
                 {
-                    await _fileManager.DeleteFileIfExistsAsync(application.ID, removedFile.Path);
+                    await _fileManager.TryDeleteFileAsync(application.ID, FormatFilePathString(removedFile.Path));
                 }
                 return Ok();
             }
@@ -125,8 +125,7 @@ namespace XDeploy.Server.Controllers
 
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
-
-                location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
+                location = FormatFilePathString(location);
                 if (await _fileManager.HasFileAsync(application.ID, location))
                 {
                     return File(await _fileManager.GetFileBytesAsync(application.ID, location), "application/octet-stream");
@@ -144,8 +143,10 @@ namespace XDeploy.Server.Controllers
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                _context.Applications.Find(application.ID).Locked = true;
+                var app = _context.Applications.Find(application.ID);
+                app.Locked = true;
                 _context.SaveChanges();
+                WebsocketsIOC.TriggerApplicationLockedChanged(application.ID, true);
                 return Created(new Uri("api/LockApplication", UriKind.Relative), application.ID);
             }
             return Unauthorized();
@@ -156,10 +157,13 @@ namespace XDeploy.Server.Controllers
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                _context.Applications.Find(application.ID).Locked = false;
+                var app = _context.Applications.Find(application.ID);
+                app.Locked = false;
+                app.LastUpdate = DateTime.Now;
                 _context.SaveChanges();
-                WebsocketsIOC.TriggerUpdate(application.ID);
-                return Created(new Uri("api/CreateDeploymentJob", UriKind.Relative), application.ID);
+                WebsocketsIOC.TriggerUpdateAvailable(application.ID);
+                WebsocketsIOC.TriggerApplicationLockedChanged(application.ID, false);
+                return Created(new Uri("api/UnlockApplication", UriKind.Relative), application.ID);
             }
             return Unauthorized();
         }
@@ -178,7 +182,7 @@ namespace XDeploy.Server.Controllers
 
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
+                location = FormatFilePathString(location);
                 if (await _fileManager.HasFileAsync(application.ID, location, checksum))
                 {
                     return StatusCode(303);
@@ -198,5 +202,7 @@ namespace XDeploy.Server.Controllers
             }
             return Unauthorized();
         }
+
+        private static string FormatFilePathString(string value) => value.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
     }
 }

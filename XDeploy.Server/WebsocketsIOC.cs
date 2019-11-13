@@ -10,35 +10,56 @@ namespace XDeploy.Server
     /// </summary>
     public static class WebsocketsIOC
     {
-        private static Dictionary<string, List<Action<string>>> _updateActions = new Dictionary<string, List<Action<string>>>();
+        private static Dictionary<string, List<Action<string>>> _updateAvailableActions = new Dictionary<string, List<Action<string>>>();
+        private static List<Action<(string ApplicationID, bool Locked)>> _applicationStateChanged = new List<Action<(string ApplicationID, bool Locked)>>();
 
         /// <summary>
         /// Triggers an update signal for an application.
         /// </summary>
-        /// <param name="id">The application ID.</param>
-        public static void TriggerUpdate(string id)
+        /// <param name="applicationID">The application ID.</param>
+        public static void TriggerUpdateAvailable(string applicationID)
         {
-            if (_updateActions.ContainsKey(id))
+            if (_updateAvailableActions.ContainsKey(applicationID))
             {
-                foreach(var action in _updateActions[id].ToList())
+                foreach(var action in _updateAvailableActions[applicationID].ToList())
                 {
-                    action.Invoke(id);
+                    action.Invoke(applicationID);
                 }
             }
         }
 
         /// <summary>
-        /// Registers an action to be called by the <see cref="TriggerUpdate(string)"/> method.
+        /// Registers an action to be called by the <see cref="TriggerUpdateAvailable(string)"/> method.
         /// </summary>
         /// <param name="applicationID">The application ID.</param>
         /// <param name="onUpdate">The action that will be called whenever an update is triggered. The action takes in the application ID.</param>
-        public static void RegisterOnAppUpdate(string applicationID, Action<string> onUpdate)
+        public static void RegisterOnAppUpdateAvailable(string applicationID, Action<string> onUpdate)
         {
-            if (!_updateActions.ContainsKey(applicationID))
+            if (!_updateAvailableActions.ContainsKey(applicationID))
             {
-                _updateActions[applicationID] = new List<Action<string>>();
+                _updateAvailableActions[applicationID] = new List<Action<string>>();
             }
-            _updateActions[applicationID].Add(onUpdate);
+            _updateAvailableActions[applicationID].Add(onUpdate);
+        }
+
+        /// <summary>
+        /// Triggers a lock changed signal for an application.
+        /// </summary>
+        public static void TriggerApplicationLockedChanged(string ApplicationID, bool Locked)
+        {
+            foreach (var action in _applicationStateChanged.ToList())
+            {
+                action.Invoke((ApplicationID, Locked));
+            }
+        }
+
+        /// <summary>
+        /// Registers an action to be called by the <see cref="TriggerApplicationLockedChanged(string, bool)"/> method.
+        /// </summary>
+        /// <param name="onUpdate">The action that will be called whenever a lock change is triggered. The action takes in the application ID.</param>
+        public static void RegisterApplicationLockedChanged(Action<(string ApplicationID, bool Locked)> onUpdate)
+        {
+            _applicationStateChanged.Add(onUpdate);
         }
     }
 }

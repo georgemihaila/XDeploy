@@ -1,13 +1,13 @@
 ﻿{
   "Mode": "Deployer",
-  "Endpoint": "https://xdeploy.0x9fd8de5fc2a7.world",
-  "Email": "george_mihaila@outlook.com",
-  "APIKey": "eHr5v8Z8lPJnYH0QiHw7ebDVx4Fytfxt",
+  "Endpoint": "https://localhost:44353",
+  "Email": "admin@example.com",
+  "APIKey": "rNSmvXYBzx6RiRS9QjsuWmPw5hT5gMCn",
   "SyncServerPort": 7745,
   "Apps": [
     {
-      "ID": "H61TfvyRXJ",
-      "Location": "C:\\Users\\georg\\Desktop\\TradingBot\\TradingBot.Server\\bin\\Debug\\netcoreapp3.0"
+      "ID": "bnd6qHeUr9",
+      "Location": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\Reassigner\\bin"
     }
   ],
   "Verbose": true
