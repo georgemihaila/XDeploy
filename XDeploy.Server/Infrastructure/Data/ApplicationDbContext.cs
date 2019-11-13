@@ -41,16 +41,6 @@ namespace XDeploy.Server.Infrastructure.Data
         public DbSet<Application> Applications { get; set; }
 
         /// <summary>
-        /// Gets or sets the deployment jobs.
-        /// </summary>
-        public DbSet<DeploymentJob> DeploymentJobs { get; set; }
-
-        /// <summary>
-        /// Gets or sets the expected files.
-        /// </summary>
-        public DbSet<ExpectedFile> ExpectedFile { get; set; }
-
-        /// <summary>
         /// Determines whether the specified user has at least one API key.
         /// </summary>
         public bool HasAPIKeys(ClaimsPrincipal claims) => APIKeys.Count(x => x.UserEmail == claims.Identity.Name) > 0;

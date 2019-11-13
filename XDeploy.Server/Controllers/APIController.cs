@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using System;
 using System.Buffers;
@@ -14,20 +15,22 @@ using System.Text;
 using System.Threading.Tasks;
 using XDeploy.Core;
 using XDeploy.Core.IO;
+using XDeploy.Core.IO.FileManagement;
 using XDeploy.Server.Infrastructure;
 using XDeploy.Server.Infrastructure.Data;
+using XDeploy.Server.Infrastructure.Data.MongoDb;
 
 namespace XDeploy.Server.Controllers
 {
     public class APIController : APIValidationBase
     {
-        private readonly string _cachedFilesPath;
+        private readonly MongoDbFileManager _fileManager;
 
-        public APIController(IConfiguration configuration, ApplicationDbContext context) : base(context)
+        public APIController(MongoDbFileManager fileManager, ApplicationDbContext context) : base(context)
         {
-            _cachedFilesPath = configuration.GetValue<string>("CacheLocation");
+            _fileManager = fileManager;
         }
-
+        
         /// <summary>
         /// <para>Validates a user's credentials.</para>
         /// <para>POST /api/ValidateCredentials</para>
@@ -53,13 +56,11 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult RemoteTree([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
+        public async Task<IActionResult> RemoteFiles([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsAndOwner, application))
             {
-                var tree = new Tree(Path.Combine(_cachedFilesPath, application.ID));
-                tree.Relativize();
-                return Content(JsonConvert.SerializeObject(tree));
+                return Content(JsonConvert.SerializeObject(await _fileManager.GetAllFilesForApplicationAsync(application.ID)));
             }
             return Unauthorized();
         }
@@ -80,7 +81,7 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpGet]
-        public IActionResult HasFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum)
+        public async Task<IActionResult> HasFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum)
         {
             if (location is null)
             {
@@ -95,27 +96,27 @@ namespace XDeploy.Server.Controllers
             {
 
                 location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
-                var path = Path.Combine(_cachedFilesPath, application.ID);
-                var res = (new FileManager(path).HasFile(location, checksum));
-                return Content(JsonConvert.SerializeObject(res));
+                return Content(JsonConvert.SerializeObject(await _fileManager.HasFileAsync(application.ID, location, checksum)));
             }
             return Unauthorized();
         }
 
         [HttpPost]
-        public IActionResult Cleanup([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<IODifference> differences)
+        public async Task<IActionResult> Cleanup([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<IODifference> differences)
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                var fileManager = new FileManager(Path.Combine(_cachedFilesPath, application.ID));
-                fileManager.Cleanup(differences.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
+                foreach(var removedFile in differences.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal))
+                {
+                    await _fileManager.DeleteFileIfExistsAsync(application.ID, removedFile.Path);
+                }
                 return Ok();
             }
             return Unauthorized();
         }
 
         [HttpGet]
-        public IActionResult DownloadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location)
+        public async Task<IActionResult> DownloadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location)
         {
             if (location is null)
             {
@@ -126,11 +127,9 @@ namespace XDeploy.Server.Controllers
             {
 
                 location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
-                var path = Path.Combine(_cachedFilesPath, application.ID);
-                var fileManager = new FileManager(path);
-                if (fileManager.HasFile(location))
+                if (await _fileManager.HasFileAsync(application.ID, location))
                 {
-                    return File(fileManager.GetFileBytes(location), "application/octet-stream");
+                    return File(await _fileManager.GetFileBytesAsync(application.ID, location), "application/octet-stream");
                 }
                 else
                 {
@@ -141,60 +140,32 @@ namespace XDeploy.Server.Controllers
         }
 
         [HttpPost]
-        public IActionResult DeleteDeploymentJob([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [ModelBinder(BinderType = typeof(IDDeploymentJobBinder), Name = "jobid")] DeploymentJob deploymentJob)
+        public IActionResult LockApplication([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
-                if (deploymentJob is null)
-                {
-                    return Ok();
-                }
-                if (deploymentJob.ApplicationID != application.ID)
-                {
-                    return BadRequest("Deployment job doesn't match application.");
-                }
-                try
-                {
-                    _context.ExpectedFile.RemoveRange(_context.ExpectedFile.Where(x => x.ParentJob.ID == deploymentJob.ID));
-                    _context.DeploymentJobs.Remove(_context.DeploymentJobs.First(x => x.ID == deploymentJob.ID));
-                    _context.SaveChanges();
-                }
-                catch //To do something with this
-                {
-
-                }
-                StaticWebSocketsWorkaround.TriggerUpdate(application.ID);
-                return Created(new Uri("api/DeleteDeploymentJob", UriKind.Relative), deploymentJob.ID);
-            }
-            return Unauthorized();
-        }
-
-        [HttpPost]
-        public IActionResult CreateDeploymentJob([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromBody] IEnumerable<ExpectedFileInfo> expected)
-        {
-            if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
-            {
-                var job = new DeploymentJob()
-                {
-                    ID = RNG.GetRandomString(8, RNG.StringType.Numeric).TrimStart('0'),
-                    ApplicationID = application.ID
-                };
-                job.ExpectedFiles = expected.Select(x => new ExpectedFile()
-                {
-                    ID = RNG.GetRandomString(8, RNG.StringType.Alphanumeric),
-                    Checksum = x.Checksum,
-                    Filename = x.Filename.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\'),
-                    ParentJob = job 
-                }).ToList();
-                _context.DeploymentJobs.Add(job);
+                _context.Applications.Find(application.ID).Locked = true;
                 _context.SaveChanges();
-                return Created(new Uri("api/CreateDeploymentJob", UriKind.Relative), job.ID);
+                return Created(new Uri("api/LockApplication", UriKind.Relative), application.ID);
             }
             return Unauthorized();
         }
 
         [HttpPost]
-        public IActionResult UploadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum, [ModelBinder(BinderType = typeof(IDDeploymentJobBinder), Name = "jobid")] DeploymentJob deploymentJob)
+        public IActionResult UnlockApplication([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
+        {
+            if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
+            {
+                _context.Applications.Find(application.ID).Locked = false;
+                _context.SaveChanges();
+                WebsocketsIOC.TriggerUpdate(application.ID);
+                return Created(new Uri("api/CreateDeploymentJob", UriKind.Relative), application.ID);
+            }
+            return Unauthorized();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UploadFile([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application, [FromHeader(Name = "Content-Location")] string location, [FromHeader(Name = "X-SHA256")] string checksum)
         {
             if (location is null)
             {
@@ -204,44 +175,26 @@ namespace XDeploy.Server.Controllers
             {
                 return BadRequest("X-SHA256 header is required and must specify the SHA-256 checksum of the file.");
             }
-            if (deploymentJob is null)
-            {
-                return BadRequest("Parameter jobid is required and must specify a valid deployment job id.");
-            }
 
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
                 location = location.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\');
-                if (deploymentJob.ApplicationID != application.ID)
-                {
-                    return BadRequest("Deployment job doesn't match application.");
-                }
-                /* //Is weird
-                if (!deploymentJob.ExpectedFiles.Any(x => x.Checksum == checksum && x.Filename == location))
-                {
-                    return BadRequest("Unexpected file.");
-                }
-                */
-                var path = Path.Combine(_cachedFilesPath, application.ID);
-                var fileManager = new FileManager(path);
-                if (fileManager.HasFile(location, checksum))
+                if (await _fileManager.HasFileAsync(application.ID, location, checksum))
                 {
                     return StatusCode(303);
                 }
                 else
                 {
-                    fileManager.WriteFile(location, Request.BodyReader.AsStream(), (int)Request.ContentLength);
-
-                    _context.ExpectedFile.Remove(_context.ExpectedFile.First(x => x.ParentJob.ID == deploymentJob.ID && x.Checksum == checksum));
-                    if (deploymentJob.ExpectedFiles.Count == 0)
+                    var bytes = new byte[(int)Request.ContentLength];
+                    using (BinaryReader reader = new BinaryReader(Request.BodyReader.AsStream()))
                     {
-                        _context.DeploymentJobs.Remove(deploymentJob);
-                        StaticWebSocketsWorkaround.TriggerUpdate(application.ID);
+                        bytes = reader.ReadBytes(bytes.Length);
                     }
+                    await _fileManager.InsertOrUpdateFileAsync(application.ID, location, bytes);
                     application.LastUpdate = DateTime.Now;
                     _context.SaveChanges();
                 }
-                return Created(new Uri(location, UriKind.Relative), null);
+                return Created( new Uri(location, UriKind.Relative), null);
             }
             return Unauthorized();
         }

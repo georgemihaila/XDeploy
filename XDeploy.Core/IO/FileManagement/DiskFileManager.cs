@@ -3,23 +3,39 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace XDeploy.Core.IO
+namespace XDeploy.Core.IO.FileManagement
 {
     /// <summary>
-    /// Represents a file manager.
+    /// Represents a file manager that caches files to the disk.
     /// </summary>
-    public class FileManager
+    public class DiskFileManager
     {
-        private readonly string _baseLocation;
+        /// <summary>
+        /// Gets the base location.
+        /// </summary>
+        public string BaseLocation { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileManager"/> class.
+        /// Gets all files the base directory as a collection of <see cref="FileInfo"/>s.
+        /// </summary>
+        public IEnumerable<FileInfo> AsFileInfoCollection() => System.IO.Directory.EnumerateFiles(BaseLocation, "*.*", System.IO.SearchOption.AllDirectories).Select(x => new FileInfo()
+        {
+            Name = x.Replace(BaseLocation, string.Empty),
+            LastModified = (new System.IO.FileInfo(x)).LastWriteTime,
+            SHA256CheckSum = Cryptography.SHA256CheckSum(x)
+        });
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DiskFileManager"/> class.
         /// </summary>
         /// <param name="baseLocation">The base location.</param>
-        public FileManager(string baseLocation)
+        public DiskFileManager(string baseLocation)
         {
-            _baseLocation = baseLocation;
-            Directory.CreateDirectory(_baseLocation);
+            if (baseLocation is null)
+                throw new ArgumentException(baseLocation);
+
+            BaseLocation = baseLocation;
+            Directory.CreateDirectory(BaseLocation);
         }
 
         /// <summary>
@@ -32,21 +48,21 @@ namespace XDeploy.Core.IO
         /// </summary>
         public bool HasFile(string relativePath, string sha256checksum)
         {
-            var path = Path.Join(_baseLocation, relativePath);
+            var path = Path.Join(BaseLocation, relativePath);
             return File.Exists(path) && ((sha256checksum != null) ? Cryptography.SHA256CheckSum(path) == sha256checksum : true);
         }
 
         /// <summary>
         /// Opens a binary file, reads the contents of the file into a byte array, and then closes the file.
         /// </summary>
-        public byte[] GetFileBytes(string relativePath) => File.ReadAllBytes(Path.Join(_baseLocation, relativePath));
+        public byte[] GetFileBytes(string relativePath) => File.ReadAllBytes(Path.Join(BaseLocation, relativePath));
 
         /// <summary>
         /// Gets the a file's checksum and bytes.
         /// </summary>
         public (string Checksum, byte[] Bytes) GetFileChecksumAndBytes(string relativePath)
         {
-            var path = Path.Join(_baseLocation, relativePath);
+            var path = Path.Join(BaseLocation, relativePath);
             return (Cryptography.SHA256CheckSum(path), File.ReadAllBytes(path));
         }
 
@@ -55,9 +71,9 @@ namespace XDeploy.Core.IO
         /// </summary>
         public void WriteFileBytes(string relativePath, byte[] bytes)
         {
-            var dir = Path.Combine(_baseLocation, Path.Combine(relativePath.Split(Path.DirectorySeparatorChar)[..^1]));
+            var dir = Path.Combine(BaseLocation, Path.Combine(relativePath.Split(Path.DirectorySeparatorChar)[..^1]));
             Directory.CreateDirectory(dir);
-            File.WriteAllBytes(Path.Join(_baseLocation, relativePath), bytes);
+            File.WriteAllBytes(Path.Join(BaseLocation, relativePath), bytes);
         }
 
         /// <summary>
@@ -65,9 +81,9 @@ namespace XDeploy.Core.IO
         /// </summary>
         public void WriteFile(string relativePath, Stream stream, int length)
         {
-            var dir = Path.Combine(_baseLocation, Path.Combine(relativePath.Split(Path.DirectorySeparatorChar)[..^1]));
+            var dir = Path.Combine(BaseLocation, Path.Combine(relativePath.Split(Path.DirectorySeparatorChar)[..^1]));
             Directory.CreateDirectory(dir);
-            using (var fs = System.IO.File.Create(Path.Combine(_baseLocation, relativePath)))
+            using (var fs = System.IO.File.Create(Path.Combine(BaseLocation, relativePath)))
             {
                 byte[] buffer = null;
                 var requestStream = stream;
@@ -95,7 +111,7 @@ namespace XDeploy.Core.IO
             foreach (var removal in removals)
             {
                 removal.Path = removal.Path.Replace('/', '\\').Replace("%5C", "\\").TrimStart('\\');
-                var path = Path.Join(_baseLocation, removal.Path);
+                var path = Path.Join(BaseLocation, removal.Path);
                 switch (removal.Type) //TODO: Here, we should also remove corresponding files and directories from the removal list so we don't end up with too many unnecessary operations
                 {
                     case IODifference.ObjectType.Directory:

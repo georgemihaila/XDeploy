@@ -70,5 +70,10 @@ namespace XDeploy.Server.Infrastructure.Data
         /// Gets or sets the post-deploy actions.
         /// </summary>
         public string PostdeployActions { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="IApplication" /> is locked. This indicates that an application is currently being updated.
+        /// </summary>
+        public bool Locked { get; set; }
     }
 }

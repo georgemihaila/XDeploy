@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0-preview2.19523.17" />
+    <PackageReference Include="websocket-sharp-with-proxy-support" Version="1.9.1" />
   </ItemGroup>
 
   <ItemGroup>

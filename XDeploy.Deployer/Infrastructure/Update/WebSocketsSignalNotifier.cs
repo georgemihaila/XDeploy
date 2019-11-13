@@ -2,8 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WebSocketSharp;
 using XDeploy.Core;
+using WebSocketSharp;
 
 namespace XDeploy.Client.Infrastructure
 {
@@ -80,6 +80,7 @@ namespace XDeploy.Client.Infrastructure
             for (int i = 0; i < _appWs.Count; i++)
             {
                 var ws = new WebSocket(string.Format("{0}/api/ws?authString={1}&id={2}", _endpoint.Replace("https://", "wss://").Replace("http://", "ws://"), _authString.Replace("Basic ", string.Empty), _appWs[i].ID));
+                ws.Log.Level = LogLevel.Fatal;
                 if (_proxy != null)
                 {
                     ws.SetProxy(_proxy.Address, _proxy.ProxyCredentials.UserName, _proxy.ProxyCredentials.Password);

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using XDeploy.Core;
 using XDeploy.Core.IO;
+using XDeploy.Core.IO.FileManagement;
 
 namespace XDeploy.Client.Infrastructure
 {
@@ -16,8 +18,7 @@ namespace XDeploy.Client.Infrastructure
     {
         protected readonly XDeployAPI _api;
         protected readonly ApplicationInfo _app;
-        protected Tree _localTree;
-        protected FileManager _fileManager;
+        protected DiskFileManager _fileManager;
 
         protected const string TimeFormat = "HH:mm:ss";
         protected const string NL = "\r\n";
@@ -47,10 +48,8 @@ namespace XDeploy.Client.Infrastructure
 
             _api = api;
             _app = app;
-
-            _localTree = new Tree(_app.Location);
-            _localTree.Relativize(); //Such that differences are computed correctly
-            _fileManager = new FileManager(app.Location);
+;
+             _fileManager = new DiskFileManager(app.Location);
         }
 
         /// <summary>

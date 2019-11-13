@@ -34,27 +34,16 @@ namespace XDeploy.Client.Infrastructure
         {
             SynchronizationResult result = null;
             
-            var remoteTree = await _api.GetRemoteTreeAsync(_app);
-            _localTree = new Tree(_app.Location);
-            _localTree.Relativize();
-            var diffs = remoteTree.Diff(_localTree, Tree.FileUpdateCheckType.Checksum);
-            var toBeUploaded = diffs
-                .Where(x => x.Type == IODifference.ObjectType.File && (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update))
-                .Select(x => new ExpectedFileInfo()
-            {
-                Filename = x.Path.Replace('/', '\\').Replace("%5C", "\\").Replace("%20", " ").TrimStart('\\'),
-                Checksum = x.Checksum
-            });
-
-            //Ensure removed files and directories are also removed on the server so we don't take up too much of the owner's space. jk, not doing so will (also) fill the deployment computer(s) with no-longer-necessary files.
-            await _api.DoCleanupAsync(_app, diffs);
-            //It doesn't matter whether we have new files to upload
+            var remote = await _api.GetRemoteFilesAsync(_app);
+            var diffs = IOExtensions.Diff(_fileManager.AsFileInfoCollection(), remote);
+            await _api.DoCleanupAsync(_app, diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
+            var toBeUploaded = diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Addition);
             if (toBeUploaded.Count() != 0)
             {
                 result = new SynchronizationResult();
                 LogToConsole("Upload started");
 
-                var jobid = await _api.CreateDeploymentJobAsync(_app, toBeUploaded);
+                await _api.LockApplicationAsync(_app);
 
                 var chunks = toBeUploaded.ChunkBy(FILES_CHUNK_SIZE); //Do multiple uploads at once instead of one at a time
                 foreach (var chunk in chunks)
@@ -63,8 +52,8 @@ namespace XDeploy.Client.Infrastructure
                     {
                         try
                         {
-                            LogToConsole($"Uploading {x.Filename}...");
-                            var res = await _api.UploadFileIfNotExistsAsync(_app, jobid, x.Filename, x.Checksum, _fileManager.GetFileBytes(x.Filename));
+                            LogToConsole($"Uploading {x.Path}...");
+                            var res = await _api.UploadFileIfNotExistsAsync(_app, x.Path.Replace(_fileManager.BaseLocation, string.Empty), x.Checksum, _fileManager.GetFileBytes(x.Path));
                             if (res != "Exists")
                             {
                                 result.NewFiles++;
@@ -72,12 +61,12 @@ namespace XDeploy.Client.Infrastructure
                         }
                         catch (Exception e)
                         {
-                            LogToConsole($"Error uploading file {x.Filename} ({e.GetType().ToString()})");
+                            LogToConsole($"Error uploading file {x.Path} ({e.GetType().ToString()})");
                         }
                     }));
                     await Task.WhenAll(uploadTasks);
                 }
-                await _api.DeleteDeploymentJobAsync(_app, jobid);
+                await _api.UnlockApplicationAsync(_app);
 
                 LogToConsole("Upload completed");
             }
@@ -85,7 +74,6 @@ namespace XDeploy.Client.Infrastructure
             {
                 LogToConsole("Up to date");
             }
-
             return result;
         }
     }

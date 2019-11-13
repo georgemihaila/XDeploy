@@ -6,7 +6,7 @@ using System.Linq;
 namespace XDeploy.Core.IO.Extensions
 {
     /// <summary>
-    /// Provides extension methods for the <see cref="XDeploy.Core.IO"/> namespace.
+    /// Provides extension methods for the <see cref="IO"/> namespace.
     /// </summary>
     public static class IOExtensions
     {
@@ -22,27 +22,25 @@ namespace XDeploy.Core.IO.Extensions
                             $"{diffs.Where(x => x.Type == IODifference.ObjectType.Directory && x.DifferenceType == IODifference.IODifferenceType.Removal).Count()} removed {Environment.NewLine}";
 
         /// <summary>
-        /// Gets all subdirectories of this directory.
+        /// Computes and returns the differences between two <see cref="FileInfo"/> lists.
         /// </summary>
-        public static IEnumerable<DirectoryInfo> GetAllSubdirectories(this DirectoryInfo directoryInfo)
+        public static IEnumerable<IODifference> Diff(IEnumerable<FileInfo> current, IEnumerable<FileInfo> previous)
         {
-            var result = new List<DirectoryInfo>();
-            result.AddRange(directoryInfo.Subdirectories);
-            foreach(var dir in directoryInfo.Subdirectories)
+            var result = new List<IODifference>();
+            result.AddRange(current.Where(x => !previous.Select(x => x.SHA256CheckSum).Contains(x.SHA256CheckSum)).Select(x => new IODifference()
             {
-                result.AddRange(dir.GetAllSubdirectories());
-            }
-            return result;
-        }
-
-        public static IEnumerable<FileInfo> GetAllFiles(this DirectoryInfo directoryInfo)
-        {
-            var result = new List<FileInfo>();
-            result.AddRange(directoryInfo.Files);
-            foreach (var dir in directoryInfo.GetAllSubdirectories())
+                DifferenceType = IODifference.IODifferenceType.Addition,
+                Path = x.Name,
+                Type = IODifference.ObjectType.File,
+                Checksum = x.SHA256CheckSum
+            }));
+            result.AddRange(previous.Where(x => !current.Select(x => x.SHA256CheckSum).Contains(x.SHA256CheckSum)).Select(x => new IODifference()
             {
-                result.AddRange(dir.GetAllFiles());
-            }
+                DifferenceType = IODifference.IODifferenceType.Removal,
+                Path = x.Name,
+                Type = IODifference.ObjectType.File,
+                Checksum = x.SHA256CheckSum
+            }));
             return result;
         }
     }

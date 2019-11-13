@@ -15,6 +15,8 @@ using Microsoft.Extensions.Hosting;
 using XDeploy.Server.Infrastructure.Data;
 using System.IO;
 using Microsoft.AspNetCore.Http.Features;
+using XDeploy.Core.IO.FileManagement;
+using XDeploy.Server.Infrastructure.Data.MongoDb;
 
 namespace XDeploy.Server
 {
@@ -44,17 +46,13 @@ namespace XDeploy.Server
             services.AddMvc(options =>
             {
                 options.ModelBinderProviders.Insert(0, new IDApplicationBinderProvider());
-                options.ModelBinderProviders.Insert(1, new IDDeploymentJobBinderProvider());
             });
 
             services.AddControllersWithViews();
             services.AddRazorPages();
 
-            var cachePath = Configuration.GetValue<string>("CacheLocation");
-            if (!Directory.Exists(cachePath))
-            {
-                Directory.CreateDirectory(cachePath);
-            }
+            var mongoDb = new MongoDbFileManager(Configuration.GetConnectionString("MongoDbConnection"), Configuration.GetValue<string>("MongoDbFileStorageDbName"));
+            services.AddSingleton(mongoDb);
         }
 
 

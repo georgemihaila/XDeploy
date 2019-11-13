@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using XDeploy.Core.IO;
 using System.Linq;
+using FileInfo = XDeploy.Core.IO.FileInfo;
 
 namespace XDeploy.Core
 {
@@ -58,24 +59,24 @@ namespace XDeploy.Core
         public async Task<string> GetAppDetailsAsync(string appID) => await GETRequestAsync("/App?id=" + appID);
 
         /// <summary>
-        /// Attempts to create a deployment job based on an expected file list and returns the job ID, in case the request is successful.
+        /// Locks an application by terminating all active client update jobs.
         /// </summary>
-        public async Task<int> CreateDeploymentJobAsync(ApplicationInfo app, IEnumerable<ExpectedFileInfo> expected) => await CreateDeploymentJobAsync(app.ID, expected);
+        public async Task LockApplicationAsync(ApplicationInfo app) => await LockApplicationAsync(app.ID);
 
         /// <summary>
-        /// Attempts to create a deployment job based on an expected file list and returns the job ID, in case the request is successful.
+        /// Locks an application by terminating all active client update jobs.
         /// </summary>
-        public async Task<int> CreateDeploymentJobAsync(string appID, IEnumerable<ExpectedFileInfo> expected) => await POSTRequestAsync<int>("/CreateDeploymentJob?id=" + appID, expected);
+        public async Task LockApplicationAsync(string appID) => await POSTSimpleAsync("/LockApplication?id=" + appID);
 
         /// <summary>
-        /// Attempts to delete a deployment job based on its ID.
+        /// Unlocks an application by notifying all active clients that there is an update available.
         /// </summary>
-        public async Task DeleteDeploymentJobAsync(ApplicationInfo app, int jobid) => await DeleteDeploymentJobAsync(app.ID, jobid);
+        public async Task UnlockApplicationAsync(ApplicationInfo app) => await UnlockApplicationAsync(app.ID);
 
         /// <summary>
-        /// Attempts to delete a deployment job based on its ID.
+        /// Unlocks an application by notifying all active clients that there is an update available.
         /// </summary>
-        public async Task DeleteDeploymentJobAsync(string appID, int jobid) => await POSTSimpleAsync("/DeleteDeploymentJob?id=" + appID + "&jobid=" + jobid);
+        public async Task UnlockApplicationAsync(string appID) => await POSTSimpleAsync("/UnlockApplication?id=" + appID);
 
         /// <summary>
         /// Uses a list of <see cref="IODifference"/>s to clear files and folders that may have been removed locally.
@@ -90,12 +91,12 @@ namespace XDeploy.Core
         /// <summary>
         /// Checks if the server already has a specific file and in case it does not, it uploads it.
         /// </summary>
-        public async Task<string> UploadFileIfNotExistsAsync(ApplicationInfo app, int jobid, string relativeLocation, string checksum, byte[] fileBytes)
+        public async Task<string> UploadFileIfNotExistsAsync(ApplicationInfo app, string relativeLocation, string checksum, byte[] fileBytes)
         {
             var contentLocation = relativeLocation.Replace("%5C", "\\").TrimStart('\\');
             if (!await HasFileAsync(app.ID, contentLocation, checksum))
             {
-                var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + app.ID + "&jobid=" + jobid);
+                var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + app.ID);
                 request.Method = "POST";
                 request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
                 request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
@@ -132,7 +133,7 @@ namespace XDeploy.Core
             var checksum = Cryptography.SHA256CheckSum(fullFilePath);
             if (!await HasFileAsync(appID, contentLocation, checksum))
             {
-                var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + appID + "&jobid=" + jobid);
+                var request = (HttpWebRequest)WebRequest.Create(_endpoint + "/UploadFile?id=" + appID);
                 request.Method = "POST";
                 request.Headers[HttpRequestHeader.Authorization] = _authHeaderValue;
                 request.Headers[HttpRequestHeader.ContentLocation] = contentLocation;
@@ -176,12 +177,12 @@ namespace XDeploy.Core
         /// <summary>
         /// Gets the remote tree of an application.
         /// </summary>
-        public async Task<Tree> GetRemoteTreeAsync(ApplicationInfo app) => await GetRemoteTreeAsync(app.ID);
+        public async Task<IEnumerable<FileInfo>> GetRemoteFilesAsync(ApplicationInfo app) => await GetRemoteFilesAsync(app.ID);
 
         /// <summary>
         /// Gets the remote tree of an application.
         /// </summary>
-        public async Task<Tree> GetRemoteTreeAsync(string appID) => JsonConvert.DeserializeObject<Tree>(await GETRequestAsync("/RemoteTree?id=" + appID));
+        public async Task<IEnumerable<FileInfo>> GetRemoteFilesAsync(string appID) => JsonConvert.DeserializeObject<IEnumerable<FileInfo>>(await GETRequestAsync("/RemoteFiles?id=" + appID));
 
         /// <summary>
         /// Downloads an application file's bytes.

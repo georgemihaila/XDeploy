@@ -44,7 +44,7 @@ namespace XDeploy.Server.Controllers
                 var lastUpdate = app.LastUpdate;
                 await Task.Run(async () =>
                 {
-                    StaticWebSocketsWorkaround.RegisterOnAppUpdate(id, async (data) =>
+                    WebsocketsIOC.RegisterOnAppUpdate(id, async (data) =>
                     {
                         await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = data }));
                     });
@@ -53,6 +53,7 @@ namespace XDeploy.Server.Controllers
                         if (webSocket.State == WebSocketState.CloseReceived)
                         {
                             await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection terminated.", CancellationToken.None);
+                            return;
                         }
                         await Task.Delay(1000);
                     }

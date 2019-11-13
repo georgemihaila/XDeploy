@@ -7,7 +7,7 @@ namespace XDeploy.Core.IO
     /// <summary>
     /// Describes basic information for a file.
     /// </summary>
-    public class FileInfo : IRelativizeable
+    public class FileInfo
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FileInfo"/> class.
@@ -41,13 +41,5 @@ namespace XDeploy.Core.IO
         /// Gets or sets the time the file was last modified.
         /// </summary>
         public DateTime LastModified { get; set; }
-
-        /// <summary>
-        /// Relativizes this file.
-        /// </summary>
-        public void Relativize(string absolute)
-        {
-            Name = Name.Replace(absolute, string.Empty);
-        }
     }
 }

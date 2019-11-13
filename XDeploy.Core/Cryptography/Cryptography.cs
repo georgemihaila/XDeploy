@@ -35,6 +35,24 @@ namespace XDeploy.Core
         }
 
         /// <summary>
+        /// Computes the SHA-256 hash of a file, represented as a byte array.
+        /// </summary>
+        public static string ComputeSHA256(byte[] fileBytes)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                byte[] bytes = sha256Hash.ComputeHash(fileBytes);
+
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
+
+        /// <summary>
         /// Computes and returns the SHA-256 hash of the file at the specified path. 
         /// </summary>
         public static string SHA256CheckSum(string filePath)

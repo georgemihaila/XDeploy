@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using XDeploy.Core;
 using XDeploy.Core.Extensions;
 using XDeploy.Core.IO;
+using XDeploy.Core.IO.Extensions;
 
 namespace XDeploy.Client.Infrastructure
 {
@@ -32,10 +33,10 @@ namespace XDeploy.Client.Infrastructure
         public override async Task<SynchronizationResult> SynchronizeAsync()
         {
             var result = new SynchronizationResult();
-            var remoteTree = await _api.GetRemoteTreeAsync(_app);
-            _localTree = new Tree(_app.Location);
-            _localTree.Relativize();
-            var diffs = _localTree.Diff(remoteTree, Tree.FileUpdateCheckType.Checksum);
+
+            var remote = await _api.GetRemoteFilesAsync(_app);
+            var diffs = IOExtensions.Diff(remote, _fileManager.AsFileInfoCollection());
+            _fileManager.Cleanup(diffs.Where(x => x.DifferenceType == IODifference.IODifferenceType.Removal));
             var toBeDownloaded = diffs
                .Where(x => x.Type == IODifference.ObjectType.File && (x.DifferenceType == IODifference.IODifferenceType.Addition || x.DifferenceType == IODifference.IODifferenceType.Update));
             if (toBeDownloaded.Count() != 0)
