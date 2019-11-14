@@ -75,5 +75,10 @@ namespace XDeploy.Server.Infrastructure.Data
         /// Gets or sets a value indicating whether this <see cref="IApplication" /> is locked. This indicates that an application is currently being updated.
         /// </summary>
         public bool Locked { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sum of the size of all files (in bytes) belonging to the application.
+        /// </summary>
+        public int Size_Bytes { get; set; }
     }
 }

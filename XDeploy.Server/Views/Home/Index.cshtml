@@ -1,9 +1,13 @@
-﻿@{
+﻿@using Microsoft.Extensions.Configuration
+@{
     ViewData["Title"] = "Home";
 }
-
+@inject IConfiguration config
 @model IndexViewModel
-
+@{ 
+    var max_quota_bytes = config.GetValue<int>("MaxProjectSizeBytes");
+    var max_quota_mb = max_quota_bytes / (1024 * 1024);
+}
 @if (User.Identity.IsAuthenticated)
 {
     if (!Model.HasAPIKey)
@@ -12,7 +16,7 @@
             function generateAPIKey() {
                 $("#gen-key").text("Generating key...");
                 $.post("/api/new-key", function (data) {
-                    $("#api-area").html('<p>This is your API key. Store it somewhere safe.</p><p class="text-light bg-dark">' + data + '</p><br/><a href="/" class="btn btn-primary">Continue</a');
+                    $("#api-area").html('<p>This is your API key. Store it somewhere safe.</p><p class="text-light bg-dark">' + data + '</p><br/><a href="/" class="ui button">Continue</a');
                 }).fail(function (error) {
                     $("#api-area").html('<p>An error occurred.</br>Details:</p><p class="text-light bg-dark">' + "[" + error.status + "] " + error.responseText + '</p>');
                 });
@@ -21,7 +25,7 @@
         </script>
         <div id="api-area">
             <p>Before starting, you need an API key.</p>
-            <button id="gen-key" onclick="generateAPIKey()" type="button" class="btn btn-primary">Generate an API key</button>
+            <button id="gen-key" onclick="generateAPIKey()" type="button" class="ui button">Generate an API key</button>
         </div>
     }
     else
@@ -33,26 +37,39 @@
         else
         {
             <p>Your apps:</p>
-            <div class="card-group">
+            <div class="ui link cards">
                 @foreach (var app in Model.Applications)
                 {
-                    <div class="card d-inline-block" style="width: 18rem;">
-                        <div id="header-@app.ID" class="card-body @Html.Raw(app.Locked?"bg-warning":string.Empty)">
-                            <h5 class="card-title">@app.Name</h5>
-                            <p class="card-text">@app.Description</p>
+                    <div class="ui card">
+                        <div class="content">
+                            <div class="header">@app.Name</div>
                         </div>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">ID: @app.ID</li>
-                            <li class="list-group-item">IP-restricted: @app.IPRestrictedDeployer</li>
+                        <div class="content">
+                            <div class="ui label">
+                                ID: @app.ID
+                            </div>
                             @if (app.IPRestrictedDeployer)
                             {
-                                <li class="list-group-item">IP: @app.DeployerIP</li>
+                                <div class="ui label">
+                                    IP restricted: true
+                                </div>
                             }
-                            <li class="list-group-item">Encrypted: @app.Encrypted</li>
-                            <li class="list-group-item">Last updated: @((app.LastUpdate == DateTime.MinValue) ? "Never" : app.LastUpdate.ToString())</li>
-                        </ul>
-                        <div class="card-body">
-                            <a asp-action="EditApp" asp-route-id="@app.ID" class="card-link">Configure</a>
+                        </div>
+                        <div class="content">
+                            <div id="status-@app.ID" class="ui label">
+                                Status: @((app.Locked) ? "updating" : "ready")
+                            </div>
+                        </div>
+                        <div class="content">
+                            <div class="ui small progress">
+                                <div class="bar" style="width: @Html.Raw(((app.Size_Bytes * 100) / max_quota_bytes) + "%")">
+                                    <div class="progress">@Html.Raw(((app.Size_Bytes * 100) / max_quota_bytes) + "%")</div>
+                                </div>
+                                <div class="label">Quota usage: @(app.Size_Bytes / (1024 * 1024)) / @max_quota_mb MB</div>
+                            </div>
+                        </div>
+                        <div class="extra content">
+                            <a asp-action="EditApp" asp-route-id="@app.ID" class="ui button">Configure</a>
                         </div>
                     </div>
                 }
@@ -68,10 +85,10 @@
                     //console.log(msg);
                     if (msg.action === "lockedChanged") {
                         if (msg.locked) {
-                            $("#header-" + msg.id).addClass('bg-warning');
+                            $("#status-" + msg.id).html("Status: updating");
                         }
                         else {
-                            $("#header-" + msg.id).removeClass('bg-warning');
+                            $("#status-" + msg.id).html("Status: ready");
                         }
                     }
                 };
@@ -81,7 +98,7 @@
             </script>
         }
         <br />
-        <a asp-controller="Home" asp-action="EditApp" id="reg-app" class="btn btn-primary">Register a new application</a>
+        <a asp-controller="Home" asp-action="EditApp" id="reg-app" class="ui button">Register a new application</a>
 
     }
 }
