@@ -37,21 +37,21 @@
                 @foreach (var app in Model.Applications)
                 {
                     <div class="card d-inline-block" style="width: 18rem;">
-                        <div id="header-@app.ID" class="card-body @Html.Raw(app.Locked?"bg-warning":"bg-success")">
+                        <div id="header-@app.ID" class="card-body @Html.Raw(app.Locked?"bg-warning":string.Empty)">
                             <h5 class="card-title">@app.Name</h5>
                             <p class="card-text">@app.Description</p>
                         </div>
                         <ul class="list-group list-group-flush">
-                            <li class="list-group-item bg-light">ID: @app.ID</li>
-                            <li class="list-group-item bg-light">IP-restricted: @app.IPRestrictedDeployer</li>
+                            <li class="list-group-item">ID: @app.ID</li>
+                            <li class="list-group-item">IP-restricted: @app.IPRestrictedDeployer</li>
                             @if (app.IPRestrictedDeployer)
                             {
-                                <li class="list-group-item bg-light">IP: @app.DeployerIP</li>
+                                <li class="list-group-item">IP: @app.DeployerIP</li>
                             }
-                            <li class="list-group-item bg-light">Encrypted: @app.Encrypted</li>
-                            <li class="list-group-item bg-light">Last updated: @((app.LastUpdate == DateTime.MinValue) ? "Never" : app.LastUpdate.ToString())</li>
+                            <li class="list-group-item">Encrypted: @app.Encrypted</li>
+                            <li class="list-group-item">Last updated: @((app.LastUpdate == DateTime.MinValue) ? "Never" : app.LastUpdate.ToString())</li>
                         </ul>
-                        <div class="card-body bg-light">
+                        <div class="card-body">
                             <a asp-action="EditApp" asp-route-id="@app.ID" class="card-link">Configure</a>
                         </div>
                     </div>
@@ -65,14 +65,14 @@
                 var ws = new WebSocket(`wss://${location.host}/ws/app-status`);
                 ws.onmessage = function (data) {
                     let msg = JSON.parse(data.data);
-                    console.log(msg);
-                    if (msg.locked) {
-                        $("#header-" + msg.id).removeClass('bg-success');
-                        $("#header-" + msg.id).addClass('bg-warning');
-                    }
-                    else {
-                        $("#header-" + msg.id).removeClass('bg-warning');
-                        $("#header-" + msg.id).addClass('bg-success');
+                    //console.log(msg);
+                    if (msg.action === "lockedChanged") {
+                        if (msg.locked) {
+                            $("#header-" + msg.id).addClass('bg-warning');
+                        }
+                        else {
+                            $("#header-" + msg.id).removeClass('bg-warning');
+                        }
                     }
                 };
                 ws.onerror = function (err) {

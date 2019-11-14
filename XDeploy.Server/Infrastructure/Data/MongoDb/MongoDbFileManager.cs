@@ -39,6 +39,8 @@ namespace XDeploy.Server.Infrastructure.Data.MongoDb
             _fileCollection = _database.GetCollection<ApplicationFile>("fs.files");
         }
 
+        #region Create
+
         /// <summary>
         /// Inserts the or updates a file.
         /// </summary>
@@ -62,6 +64,64 @@ namespace XDeploy.Server.Infrastructure.Data.MongoDb
                 _fileCollection.InsertOne(file);
             }
         }
+
+        #endregion
+
+        #region Read
+
+        /// <summary>
+        /// Determines whether this <see cref="MongoDbFileManager"/> has the specified file.
+        /// </summary>
+        /// <param name="applicationID">The application ID.</param>
+        /// <param name="filename">The filename.</param>
+        public async Task<bool> HasFileAsync(string applicationID, string filename)
+        {
+            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID && x.Filename == filename);
+            return await _fileCollection.CountDocumentsAsync(filter) == 1;
+        }
+
+        /// <summary>
+        /// Determines whether this <see cref="MongoDbFileManager" /> has the specified file.
+        /// </summary>
+        /// <param name="applicationID">The application ID.</param>
+        /// <param name="filename">The filename.</param>
+        /// <param name="sha256Checksum">The SHA-256 checksum of the file.</param>
+        public async Task<bool> HasFileAsync(string applicationID, string filename, string sha256Checksum)
+        {
+            var filter = (FilterDefinition<ApplicationFile>)(x => x.SHA256Checksum == sha256Checksum && x.ApplicationID == applicationID && x.Filename == filename);
+            return await _fileCollection.CountDocumentsAsync(filter) == 1;
+        }
+
+        /// <summary>
+        /// Gets all stored files for a specific application.
+        /// </summary>
+        public async Task<IEnumerable<FileInfo>> GetAllFilesAsync(string applicationID)
+        {
+            var result = new List<FileInfo>();
+            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID);
+            foreach (var file in (await _fileCollection.FindAsync(filter)).ToList())
+            {
+                result.Add((FileInfo)file);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the file bytes for an application file.
+        /// </summary>
+        public async Task<byte[]> GetFileBytesAsync(string applicationID, string filename)
+        {
+            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID && x.Filename == filename);
+            return (await _fileCollection.FindAsync(filter)).First().FileBytes;
+        }
+
+        #endregion
+
+        #region Update
+
+        #endregion
+
+        #region Delete
 
         /// <summary>
         /// Tries to delete a file.
@@ -94,43 +154,6 @@ namespace XDeploy.Server.Infrastructure.Data.MongoDb
         }
 
         /// <summary>
-        /// Determines whether this <see cref="MongoDbFileManager"/> has the specified file.
-        /// </summary>
-        /// <param name="applicationID">The application ID.</param>
-        /// <param name="filename">The filename.</param>
-        public async Task<bool> HasFileAsync(string applicationID, string filename)
-        {
-            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID && x.Filename == filename);
-            return await _fileCollection.CountDocumentsAsync(filter) == 1;
-        }
-
-        /// <summary>
-        /// Determines whether this <see cref="MongoDbFileManager" /> has the specified file.
-        /// </summary>
-        /// <param name="applicationID">The application ID.</param>
-        /// <param name="filename">The filename.</param>
-        /// <param name="sha256Checksum">The SHA-256 checksum of the file.</param>
-        public async Task<bool> HasFileAsync(string applicationID, string filename, string sha256Checksum)
-        {
-            var filter = (FilterDefinition<ApplicationFile>)(x => x.SHA256Checksum == sha256Checksum && x.ApplicationID == applicationID && x.Filename == filename);
-            return await _fileCollection.CountDocumentsAsync(filter) == 1;
-        }
-
-        /// <summary>
-        /// Gets all stored files for a specific application.
-        /// </summary>
-        public async Task<IEnumerable<FileInfo>> GetAllFilesAsync(string applicationID)
-        {
-            var result = new List<FileInfo>();
-            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID);
-            foreach(var file in (await _fileCollection.FindAsync(filter)).ToList())
-            {
-                result.Add((FileInfo)file);
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Deletes all files for an application.
         /// </summary>
         public async Task DeleteAllFilesAsync(string applicationID)
@@ -157,13 +180,6 @@ namespace XDeploy.Server.Infrastructure.Data.MongoDb
             await _fileCollection.DeleteManyAsync(filter);
         }
 
-        /// <summary>
-        /// Gets the file bytes for an application file.
-        /// </summary>
-        public async Task<byte[]> GetFileBytesAsync(string applicationID, string filename)
-        {
-            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID && x.Filename == filename);
-            return (await _fileCollection.FindAsync(filter)).First().FileBytes;
-        }
+        #endregion
     }
 }
