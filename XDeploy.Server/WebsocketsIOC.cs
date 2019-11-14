@@ -11,7 +11,7 @@ namespace XDeploy.Server
     public static class WebsocketsIOC
     {
         private static Dictionary<string, List<Action<string>>> _updateAvailableActions = new Dictionary<string, List<Action<string>>>();
-        private static List<Action<(string ApplicationID, bool Locked)>> _applicationStateChanged = new List<Action<(string ApplicationID, bool Locked)>>();
+        private static List<Action<(string ApplicationID, bool Locked, int NewSize)>> _applicationLockedChanged = new List<Action<(string ApplicationID, bool Locked, int NewSize)>>();
 
         /// <summary>
         /// Triggers an update signal for an application.
@@ -45,11 +45,11 @@ namespace XDeploy.Server
         /// <summary>
         /// Triggers a lock changed signal for an application.
         /// </summary>
-        public static void TriggerApplicationLockedChanged(string ApplicationID, bool Locked)
+        public static void TriggerApplicationLockedChanged(string ApplicationID, bool Locked, int NewSize)
         {
-            foreach (var action in _applicationStateChanged.ToList())
+            foreach (var action in _applicationLockedChanged.ToList())
             {
-                action.Invoke((ApplicationID, Locked));
+                action.Invoke((ApplicationID, Locked, NewSize));
             }
         }
 
@@ -57,9 +57,9 @@ namespace XDeploy.Server
         /// Registers an action to be called by the <see cref="TriggerApplicationLockedChanged(string, bool)"/> method.
         /// </summary>
         /// <param name="onUpdate">The action that will be called whenever a lock change is triggered. The action takes in the application ID.</param>
-        public static void RegisterApplicationLockedChanged(Action<(string ApplicationID, bool Locked)> onUpdate)
+        public static void RegisterApplicationLockedChanged(Action<(string ApplicationID, bool Locked, int NewSize)> onUpdate)
         {
-            _applicationStateChanged.Add(onUpdate);
+            _applicationLockedChanged.Add(onUpdate);
         }
     }
 }

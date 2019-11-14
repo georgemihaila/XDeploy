@@ -8,6 +8,9 @@
     var max_quota_bytes = config.GetValue<int>("MaxProjectSizeBytes");
     var max_quota_mb = max_quota_bytes / (1024 * 1024);
 }
+<script>
+    var max_app_bytes = @max_quota_bytes;
+</script>
 @if (User.Identity.IsAuthenticated)
 {
     if (!Model.HasAPIKey)
@@ -62,10 +65,10 @@
                         </div>
                         <div class="content">
                             <div class="ui small progress">
-                                <div class="bar" style="width: @Html.Raw(((app.Size_Bytes * 100) / max_quota_bytes) + "%")">
-                                    <div class="progress">@Html.Raw(((app.Size_Bytes * 100) / max_quota_bytes) + "%")</div>
+                                <div id="pb-@app.ID" class="bar" style="width: @Html.Raw(((app.Size_Bytes * 100) / max_quota_bytes) + "%")">
+                                    <div id="pb-label-@app.ID" class="progress">@Html.Raw(((app.Size_Bytes * 100) / max_quota_bytes) + "%")</div>
                                 </div>
-                                <div class="label">Quota usage: @(app.Size_Bytes / (1024 * 1024)) / @max_quota_mb MB</div>
+                                <div id="pb-desc-@app.ID" class="label">Quota usage: @(app.Size_Bytes / (1024 * 1024)) / @max_quota_mb MB</div>
                             </div>
                         </div>
                         <div class="extra content">
@@ -89,6 +92,10 @@
                         }
                         else {
                             $("#status-" + msg.id).html("Status: ready");
+                            let percent = parseInt(msg.size * 100 / max_app_bytes);
+                            $("#pb-" + msg.id).css('width', percent + "%");
+                            $("#pb-label-" + msg.id).html(percent + "%");
+                            $("#pb-desc-" + msg.id).html("Quota usage: " + parseInt(msg.size / (1024 * 1024)) + " / " + parseInt(max_app_bytes / (1024 * 1024)) + " MB");
                         }
                     }
                 };

@@ -146,23 +146,24 @@ namespace XDeploy.Server.Controllers
                 var app = _context.Applications.Find(application.ID);
                 app.Locked = true;
                 _context.SaveChanges();
-                WebsocketsIOC.TriggerApplicationLockedChanged(application.ID, true);
+                WebsocketsIOC.TriggerApplicationLockedChanged(application.ID, true, 0);
                 return Created(new Uri("api/LockApplication", UriKind.Relative), application.ID);
             }
             return Unauthorized();
         }
 
         [HttpPost]
-        public IActionResult UnlockApplication([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
+        public async Task<IActionResult> UnlockApplication([FromHeader(Name = "Authorization")] string authString, [ModelBinder(Name = "id")] Application application)
         {
             if (ValidateRequest(Request, RequestValidationType.CredentialsOwnerAndIP, application))
             {
                 var app = _context.Applications.Find(application.ID);
                 app.Locked = false;
                 app.LastUpdate = DateTime.Now;
+                app.Size_Bytes = await _fileManager.GetSizeForAppAsync(application.ID);
                 _context.SaveChanges();
                 WebsocketsIOC.TriggerUpdateAvailable(application.ID);
-                WebsocketsIOC.TriggerApplicationLockedChanged(application.ID, false);
+                WebsocketsIOC.TriggerApplicationLockedChanged(application.ID, false, app.Size_Bytes);
                 return Created(new Uri("api/UnlockApplication", UriKind.Relative), application.ID);
             }
             return Unauthorized();

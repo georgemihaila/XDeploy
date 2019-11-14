@@ -70,6 +70,18 @@ namespace XDeploy.Server.Infrastructure.Data.MongoDb
         #region Read
 
         /// <summary>
+        /// Gets the size of an application by summing the size of all its files.
+        /// </summary>
+        public async Task<int> GetSizeForAppAsync(string applicationID)
+        {
+            var filter = (FilterDefinition<ApplicationFile>)(x => x.ApplicationID == applicationID);
+            var result = 0;
+            var files = await _fileCollection.FindAsync(filter);
+            await files.ForEachAsync(x => result += x.FileBytes.Length);
+            return result;
+        }
+
+        /// <summary>
         /// Determines whether this <see cref="MongoDbFileManager"/> has the specified file.
         /// </summary>
         /// <param name="applicationID">The application ID.</param>

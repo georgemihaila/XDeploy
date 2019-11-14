@@ -33,12 +33,12 @@ namespace XDeploy.Server.Controllers
                 WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
                 await Task.Run(async () =>
                 {
-                    WebsocketsIOC.RegisterApplicationLockedChanged(async ((string ApplicationID, bool Locked) data) =>
+                    WebsocketsIOC.RegisterApplicationLockedChanged(async ((string ApplicationID, bool Locked, int NewSize) data) =>
                     {
                         var app = _context.Applications.Find(data.ApplicationID);
                         if (app?.OwnerEmail == User.Identity.Name)
                         {
-                            await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "lockedChanged", id = data.ApplicationID, locked = data.Locked }));
+                            await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "lockedChanged", id = data.ApplicationID, locked = data.Locked, size = data.NewSize }));
                         }
                     });
                     while (webSocket.State == WebSocketState.Open)
