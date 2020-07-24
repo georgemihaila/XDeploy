@@ -1,13 +1,13 @@
 ﻿{
   "Mode": "Updater",
   "Endpoint": "https://localhost:44353",
-  "Email": "admin@example.com",
-  "APIKey": "rNSmvXYBzx6RiRS9QjsuWmPw5hT5gMCn",
+  "Email": "test@example.com",
+  "APIKey": "v41tNhIF5TKAHxlh3MQp2WohJjTi6CP3",
   "SyncServerPort": 7745,
   "Apps": [
     {
-      "ID": "bnd6qHeUr9",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\RemoteDeploy\\XDeploy.Deployer\\bin\\Debug\\netcoreapp3.0\\target"
+      "ID": "9Mh0YY3Zli",
+      "Location": "C:\\Users\\georg\\Desktop\\HomeAutomation"
     }
   ],
   "Verbose": true

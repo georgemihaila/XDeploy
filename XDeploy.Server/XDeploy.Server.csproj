@@ -1,13 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>aspnet-XDeploy.Server-9FAB833C-9F65-4A46-8C4F-7983328E52B2</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Migrations\20191031122313_AddedKeyHash.cs" />
     <Compile Remove="Migrations\20191031122313_AddedKeyHash.Designer.cs" />
+    <Compile Remove="Migrations\20200724061839_Initial1.cs" />
+    <Compile Remove="Migrations\20200724061839_Initial1.Designer.cs" />
   </ItemGroup>
 
 

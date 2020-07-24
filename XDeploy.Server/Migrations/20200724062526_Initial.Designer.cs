@@ -10,8 +10,8 @@ using XDeploy.Server.Infrastructure.Data;
 namespace XDeploy.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20191106104726_Added-DeployActions")]
-    partial class AddedDeployActions
+    [Migration("20200724062526_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -60,6 +60,9 @@ namespace XDeploy.Server.Migrations
                     b.Property<DateTime>("LastUpdate")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("Locked")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
@@ -71,6 +74,9 @@ namespace XDeploy.Server.Migrations
 
                     b.Property<string>("PredeployActions")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Size_Bytes")
+                        .HasColumnType("int");
 
                     b.HasKey("ID");
 
@@ -87,7 +93,7 @@ namespace XDeploy.Server.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("DeploymentJobs");
+                    b.ToTable("DeploymentJob");
                 });
 
             modelBuilder.Entity("XDeploy.Server.Infrastructure.Data.ExpectedFile", b =>

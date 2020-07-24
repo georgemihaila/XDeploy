@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -28,28 +28,12 @@ namespace XDeploy.Server.Controllers
             var context = ControllerContext.HttpContext;
             if (context.WebSockets.IsWebSocketRequest)
             {
-                var creds = Decode(authString);
-                if (!ValidateCredentials(creds))
-                {
-                    context.Response.StatusCode = 401;
-                    return;
-                }
-                var app = _context.Applications.Find(id);
-                if (app is null || app.OwnerEmail != creds.Value.Email)
-                {
-                    context.Response.StatusCode = 401;
-                    return;
-                }
                 WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                var lastUpdate = app.LastUpdate;
                 await Task.Run(async () =>
                 {
-                    WebsocketsIOC.RegisterOnAppUpdateAvailable(id, async (data) =>
-                    {
-                        await SendMessageAsync(context, webSocket, JsonConvert.SerializeObject(new { action = "update", id = data }));
-                    });
                     while (webSocket.State == WebSocketState.Open)
                     {
+                        //Code
                         if (webSocket.State == WebSocketState.CloseReceived)
                         {
                             await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection terminated.", CancellationToken.None);
@@ -59,6 +43,7 @@ namespace XDeploy.Server.Controllers
                     }
                     
                 });
+                
             }
             else
             {
