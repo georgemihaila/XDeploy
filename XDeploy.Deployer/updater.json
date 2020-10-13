@@ -2,12 +2,12 @@
   "Mode": "Updater",
   "Endpoint": "https://localhost:44353",
   "Email": "test@example.com",
-  "APIKey": "v41tNhIF5TKAHxlh3MQp2WohJjTi6CP3",
+  "APIKey": "zO88TDIFXW4OyOxShZI2yj5dBtYlIHxb",
   "SyncServerPort": 7745,
   "Apps": [
     {
-      "ID": "9Mh0YY3Zli",
-      "Location": "C:\\Users\\georg\\Desktop\\HomeAutomation"
+      "ID": "mivzAmJeyf",
+      "Location": "C:\\Users\\georg\\Desktop\\HomeAutomation\\ServiceResolver"
     }
   ],
   "Verbose": true

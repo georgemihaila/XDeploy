@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace XDeploy.Server.Data.Migrations
+namespace XDeploy.Server.Migrations
 {
-    public partial class InitialIdentity1 : Migration
+    public partial class InitialADC : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

@@ -1,13 +1,13 @@
 ﻿{
   "Mode": "Deployer",
   "Endpoint": "https://localhost:44353",
-  "Email": "admin@example.com",
-  "APIKey": "rNSmvXYBzx6RiRS9QjsuWmPw5hT5gMCn",
+  "Email": "test@example.com",
+  "APIKey": "zO88TDIFXW4OyOxShZI2yj5dBtYlIHxb",
   "SyncServerPort": 7745,
   "Apps": [
     {
-      "ID": "bnd6qHeUr9",
-      "Location": "C:\\Users\\gmihaila\\source\\repos\\GSK\\Reassigner\\Reassigner\\bin"
+      "ID": "mivzAmJeyf",
+      "Location": "C:\\Users\\georg\\Desktop\\HomeAutomation\\ServiceResolver"
     }
   ],
   "Verbose": true

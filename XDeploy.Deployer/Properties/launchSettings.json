@@ -2,7 +2,7 @@
   "profiles": {
     "XDeploy.Client": {
       "commandName": "Project",
-      "commandLineArgs": "updater.json"
+      "commandLineArgs": "deployer.json"
     }
   }
 }
